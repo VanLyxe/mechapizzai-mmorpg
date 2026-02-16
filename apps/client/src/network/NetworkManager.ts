@@ -70,6 +70,8 @@ export class NetworkManager {
     public onRoomList: ((rooms: RoomInfo[]) => void) | null = null;
     public onPositionCorrected: ((x: number, y: number, reason: string) => void) | null = null;
     public onLatencyUpdate: ((latency: number) => void) | null = null;
+    public onAuthSuccess: ((data: { userId: string; username: string; characterId?: string }) => void) | null = null;
+    public onAuthError: ((error: { message: string }) => void) | null = null;
 
     constructor(serverUrl: string = 'http://localhost:3002') {
         this.serverUrl = serverUrl;
@@ -98,7 +100,7 @@ export class NetworkManager {
                 this.socket!.on('connect', () => {
                     this.isConnected = true;
                     this.reconnectAttempts = 0;
-                    this.playerId = this.socket!.id;
+                    this.playerId = this.socket!.id || null;
                     console.log('✅ Connecté au serveur:', this.socket!.id);
                     if (this.onConnect) this.onConnect();
                     resolve(true);
@@ -248,6 +250,29 @@ export class NetworkManager {
             console.error('❌ Erreur serveur:', error.message);
             if (this.onError) this.onError(error);
         });
+
+        // Authentification réussie
+        this.socket.on('auth:success', (data: { userId: string; username: string; characterId?: string }) => {
+            console.log('✅ Authentification réussie:', data.username);
+            if (this.onAuthSuccess) this.onAuthSuccess(data);
+        });
+
+        // Erreur d'authentification
+        this.socket.on('auth:error', (error: { message: string }) => {
+            console.error('❌ Erreur d\'authentification:', error.message);
+            if (this.onAuthError) this.onAuthError(error);
+        });
+    }
+
+    /**
+     * Authentifie le joueur avec un token JWT
+     */
+    public authenticate(token: string, characterId?: string): void {
+        if (!this.isConnected || !this.socket) {
+            console.error('❌ Non connecté au serveur');
+            return;
+        }
+        this.socket.emit('auth:login', { token, characterId });
     }
 
     /**

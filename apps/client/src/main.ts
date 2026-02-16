@@ -3,6 +3,7 @@ import { Game } from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { PreloadScene } from './scenes/PreloadScene';
 import { MenuScene } from './scenes/MenuScene';
+import { AuthScene } from './scenes/AuthScene';
 import { GameScene } from './scenes/GameScene';
 import { UIManager } from './ui/UIManager';
 import { NetworkManager } from './network/NetworkManager';
@@ -26,7 +27,7 @@ const config: Phaser.Types.Core.GameConfig = {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
     },
-    scene: [BootScene, PreloadScene, MenuScene, GameScene],
+    scene: [BootScene, PreloadScene, MenuScene, AuthScene, GameScene],
 };
 
 // Initialisation du jeu

@@ -176,6 +176,7 @@ export class MenuScene extends Phaser.Scene {
         const buttonSpacing = 65;
 
         const menuItems = [
+            { text: '🔐 CONNEXION', scene: 'AuthScene', color: 0x00D4FF },
             { text: '🎮 JOUER', scene: 'GameScene', color: 0x00D4FF },
             { text: '⚙️ OPTIONS', scene: null, color: 0x9CA3AF },
             { text: '📖 CRÉDITS', scene: null, color: 0x9CA3AF },

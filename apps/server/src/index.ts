@@ -3,6 +3,10 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { verifyToken, getUserFromToken } from './lib/auth.js';
+import { prisma } from './lib/prisma.js';
+import authRoutes from './routes/auth.js';
+import userRoutes from './routes/user.js';
 
 dotenv.config();
 
@@ -18,6 +22,10 @@ const io = new Server(httpServer, {
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/user', userRoutes);
 
 // ============================================
 // TYPES & INTERFACES
@@ -39,6 +47,8 @@ interface Player {
     level: number;
     health: number;
     maxHealth: number;
+    userId?: string;
+    characterId?: string;
 }
 
 interface ChatMessage {
@@ -231,7 +241,7 @@ io.on('connection', (socket) => {
     const player: Player = {
         id: socket.id,
         username: `Agent ${socket.id.slice(0, 6)}`,
-        position: { x: 0, y: 0 },
+        position: { x: 1000, y: 1000 },
         velocity: { x: 0, y: 0 },
         room: GAME_CONSTANTS.DEFAULT_ROOM,
         lastUpdate: Date.now(),
@@ -242,6 +252,56 @@ io.on('connection', (socket) => {
     };
 
     players.set(socket.id, player);
+
+    // ========================================
+    // AUTHENTICATION
+    // ========================================
+
+    // Handle authentication with JWT token
+    socket.on('auth:login', async (data: { token: string; characterId?: string }) => {
+        try {
+            const user = await getUserFromToken(data.token);
+
+            if (!user) {
+                socket.emit('auth:error', { message: 'Invalid token' });
+                return;
+            }
+
+            player.userId = user.id;
+            player.username = user.username;
+
+            // Load character if specified
+            if (data.characterId) {
+                const character = await prisma.character.findFirst({
+                    where: {
+                        id: data.characterId,
+                        userId: user.id,
+                    },
+                });
+
+                if (character) {
+                    player.characterId = character.id;
+                    player.username = character.name;
+                    player.position = { x: character.posX, y: character.posY };
+                    player.room = character.roomId;
+                    player.level = character.level;
+                    player.health = character.health;
+                    player.maxHealth = character.maxHealth;
+                }
+            }
+
+            socket.emit('auth:success', {
+                userId: user.id,
+                username: player.username,
+                characterId: player.characterId,
+            });
+
+            console.log(`🔐 ${player.username} authenticated (User: ${user.id})`);
+        } catch (error) {
+            console.error('Auth error:', error);
+            socket.emit('auth:error', { message: 'Authentication failed' });
+        }
+    });
 
     // Add to default room
     const defaultRoom = rooms.get(GAME_CONSTANTS.DEFAULT_ROOM)!;
@@ -529,11 +589,29 @@ io.on('connection', (socket) => {
     // DISCONNECTION
     // ========================================
 
-    socket.on('disconnect', (reason) => {
+    socket.on('disconnect', async (reason) => {
         console.log(`🔌 Déconnexion: ${socket.id} (${reason})`);
 
         const p = players.get(socket.id);
         if (p) {
+            // Save character position to database if authenticated
+            if (p.characterId && p.userId) {
+                try {
+                    await prisma.character.update({
+                        where: { id: p.characterId },
+                        data: {
+                            posX: p.position.x,
+                            posY: p.position.y,
+                            roomId: p.room,
+                            health: p.health,
+                        },
+                    });
+                    console.log(`💾 Position sauvegardée pour ${p.username}`);
+                } catch (error) {
+                    console.error('Error saving character position:', error);
+                }
+            }
+
             // Remove from room
             const room = rooms.get(p.room);
             if (room) {
