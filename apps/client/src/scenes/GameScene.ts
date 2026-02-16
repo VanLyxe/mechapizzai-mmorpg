@@ -1,21 +1,61 @@
 import Phaser from 'phaser';
+import { NetworkManager } from '../network/NetworkManager';
 
 /**
- * GameScene - Version Soft améliorée visuellement
+ * GameScene - Version Multijoueur
  * 
  * Features :
  * - Personnage SVG stylisé
  * - Environnement cyberpunk avec néons
- * - Effets de lumière
- * - HUD moderne
+ * - Multijoueur temps réel
+ * - Chat intégré
+ * - Minimap avec positions des joueurs
  */
+
+interface OtherPlayer {
+    container: Phaser.GameObjects.Container;
+    targetX: number;
+    targetY: number;
+    velocityX: number;
+    velocityY: number;
+    username: string;
+    lastUpdate: number;
+}
+
+interface ChatMessage {
+    id: string;
+    playerId: string;
+    username: string;
+    message: string;
+    timestamp: number;
+}
+
 export class GameScene extends Phaser.Scene {
     private player!: Phaser.GameObjects.Container;
     private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
     private wasd!: { [key: string]: Phaser.Input.Keyboard.Key };
-    private otherPlayers: Map<string, Phaser.GameObjects.Container> = new Map();
+    private otherPlayers: Map<string, OtherPlayer> = new Map();
     private isPaused: boolean = false;
     private mapContainer!: Phaser.GameObjects.Container;
+
+    // Network
+    private networkManager: NetworkManager | null = null;
+    private isConnected: boolean = false;
+    private latencyCheckInterval: number | null = null;
+    private lastPositionSend: number = 0;
+    private positionSendRate: number = 50; // ms
+
+    // Chat
+    private chatContainer!: Phaser.GameObjects.Container;
+    private chatMessages: ChatMessage[] = [];
+    private chatVisible: boolean = false;
+    private chatInput: HTMLInputElement | null = null;
+
+    // Minimap
+    private minimapPlayers: Map<string, Phaser.GameObjects.Rectangle> = new Map();
+
+    // Username
+    private playerUsername: string = 'Agent You';
 
     constructor() {
         super({ key: 'GameScene' });
@@ -28,13 +68,15 @@ export class GameScene extends Phaser.Scene {
     }
 
     create(): void {
-        console.log('🎮 GameScene: Début du jeu !');
+        console.log('🎮 GameScene: Début du jeu multijoueur !');
 
         this.createEnvironment();
         this.createPlayer();
         this.setupControls();
         this.createHUD();
         this.createMinimap();
+        this.createChatUI();
+        this.setupNetwork();
 
         // Animation d'entrée
         this.cameras.main.fadeIn(500, 10, 14, 26);
@@ -48,7 +90,429 @@ export class GameScene extends Phaser.Scene {
 
         this.handlePlayerMovement();
         this.updateEnvironmentAnimations();
+        this.updateOtherPlayers(delta);
+        this.sendPlayerPosition();
+        this.updateMinimap();
     }
+
+    // ============================================
+    // NETWORK SETUP
+    // ============================================
+
+    private setupNetwork(): void {
+        // Get network manager from window (set in main.ts)
+        this.networkManager = (window as any).networkManager as NetworkManager;
+
+        if (!this.networkManager) {
+            console.warn('⚠️ NetworkManager non disponible, création d\'une nouvelle instance');
+            this.networkManager = new NetworkManager();
+            (window as any).networkManager = this.networkManager;
+        }
+
+        // Setup callbacks
+        this.networkManager.onPlayerJoined = (playerId, data) => {
+            this.addOtherPlayer(playerId, data);
+        };
+
+        this.networkManager.onPlayerLeft = (playerId) => {
+            this.removeOtherPlayer(playerId);
+        };
+
+        this.networkManager.onPlayerMoved = (playerId, x, y, timestamp) => {
+            this.updateOtherPlayerPosition(playerId, x, y, timestamp);
+        };
+
+        this.networkManager.onPlayerVelocity = (playerId, vx, vy) => {
+            this.updateOtherPlayerVelocity(playerId, vx, vy);
+        };
+
+        this.networkManager.onPlayerUpdated = (playerId, data) => {
+            if (data.username) {
+                this.updateOtherPlayerUsername(playerId, data.username);
+            }
+        };
+
+        this.networkManager.onChatMessage = (data) => {
+            this.addChatMessage(data);
+        };
+
+        this.networkManager.onPositionCorrected = (x, y, reason) => {
+            console.log('Position corrigée:', reason);
+            this.player.setPosition(x, y);
+        };
+
+        this.networkManager.onConnect = () => {
+            this.isConnected = true;
+            this.showNotification('✅ Connecté au serveur');
+
+            // Start latency check
+            this.latencyCheckInterval = this.networkManager!.startLatencyCheck(5000);
+
+            // Request chat history
+            this.networkManager!.requestChatHistory();
+        };
+
+        this.networkManager.onDisconnect = (reason) => {
+            this.isConnected = false;
+            this.showNotification('🔌 Déconnecté: ' + reason);
+            if (this.latencyCheckInterval) {
+                this.networkManager!.stopLatencyCheck(this.latencyCheckInterval);
+            }
+        };
+
+        // Connect if not already connected
+        if (!this.networkManager.getIsConnected()) {
+            this.networkManager.connect().then((success) => {
+                if (success) {
+                    // Set username if we have one stored
+                    const storedUsername = localStorage.getItem('playerUsername');
+                    if (storedUsername) {
+                        this.playerUsername = storedUsername;
+                        this.networkManager!.setUsername(storedUsername);
+                        this.updatePlayerUsername(storedUsername);
+                    }
+                }
+            });
+        } else {
+            this.isConnected = true;
+            this.networkManager.requestChatHistory();
+        }
+    }
+
+    private sendPlayerPosition(): void {
+        if (!this.isConnected || !this.networkManager) return;
+
+        const now = Date.now();
+        if (now - this.lastPositionSend < this.positionSendRate) return;
+        this.lastPositionSend = now;
+
+        const body = this.player.body as Phaser.Physics.Arcade.Body;
+        this.networkManager.sendPlayerPosition(this.player.x, this.player.y);
+
+        // Also send velocity for prediction
+        this.networkManager.sendPlayerVelocity(body.velocity.x, body.velocity.y);
+    }
+
+    // ============================================
+    // OTHER PLAYERS MANAGEMENT
+    // ============================================
+
+    private addOtherPlayer(playerId: string, data: any): void {
+        if (this.otherPlayers.has(playerId)) return;
+
+        console.log('👤 Ajout du joueur:', data.username || playerId);
+
+        const container = this.add.container(data.position?.x || 0, data.position?.y || 0);
+
+        // Ombre
+        const shadow = this.add.ellipse(0, 45, 40, 15, 0x000000, 0.3);
+        container.add(shadow);
+
+        // Sprite (plus petit pour différencier)
+        const sprite = this.add.image(0, 0, 'player');
+        sprite.setScale(0.7);
+        sprite.setTint(0x00D4FF); // Teinte bleue pour les autres joueurs
+        container.add(sprite);
+
+        // Nom
+        const nameText = this.add.text(0, -60, data.username || `Agent ${playerId.slice(0, 6)}`, {
+            fontFamily: '"Segoe UI", sans-serif',
+            fontSize: '14px',
+            color: '#00D4FF',
+            backgroundColor: '#00000080',
+            padding: { x: 8, y: 4 },
+        });
+        nameText.setOrigin(0.5);
+        container.add(nameText);
+
+        // Niveau
+        const levelBadge = this.add.text(25, -50, String(data.level || 1), {
+            fontFamily: '"Segoe UI", sans-serif',
+            fontSize: '11px',
+            color: '#0A0E1A',
+            backgroundColor: '#00D4FF',
+            padding: { x: 6, y: 2 },
+        });
+        levelBadge.setOrigin(0.5);
+        container.add(levelBadge);
+
+        // Animation idle
+        this.tweens.add({
+            targets: sprite,
+            y: { from: 0, to: -3 },
+            duration: 1500,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+        });
+
+        this.mapContainer.add(container);
+
+        this.otherPlayers.set(playerId, {
+            container,
+            targetX: data.position?.x || 0,
+            targetY: data.position?.y || 0,
+            velocityX: 0,
+            velocityY: 0,
+            username: data.username || `Agent ${playerId.slice(0, 6)}`,
+            lastUpdate: Date.now(),
+        });
+
+        // Notification
+        this.showNotification(`👤 ${data.username || 'Un agent'} a rejoint`);
+    }
+
+    private removeOtherPlayer(playerId: string): void {
+        const otherPlayer = this.otherPlayers.get(playerId);
+        if (!otherPlayer) return;
+
+        console.log('👤 Suppression du joueur:', playerId);
+
+        otherPlayer.container.destroy();
+        this.otherPlayers.delete(playerId);
+
+        // Remove from minimap
+        const minimapDot = this.minimapPlayers.get(playerId);
+        if (minimapDot) {
+            minimapDot.destroy();
+            this.minimapPlayers.delete(playerId);
+        }
+    }
+
+    private updateOtherPlayerPosition(playerId: string, x: number, y: number, timestamp?: number): void {
+        const otherPlayer = this.otherPlayers.get(playerId);
+        if (!otherPlayer) {
+            // Player not found, request might be pending
+            return;
+        }
+
+        otherPlayer.targetX = x;
+        otherPlayer.targetY = y;
+        otherPlayer.lastUpdate = timestamp || Date.now();
+    }
+
+    private updateOtherPlayerVelocity(playerId: string, vx: number, vy: number): void {
+        const otherPlayer = this.otherPlayers.get(playerId);
+        if (!otherPlayer) return;
+
+        otherPlayer.velocityX = vx;
+        otherPlayer.velocityY = vy;
+    }
+
+    private updateOtherPlayerUsername(playerId: string, username: string): void {
+        const otherPlayer = this.otherPlayers.get(playerId);
+        if (!otherPlayer) return;
+
+        otherPlayer.username = username;
+
+        // Update name text
+        const container = otherPlayer.container;
+        const nameText = container.list.find((child) =>
+            child instanceof Phaser.GameObjects.Text && child.y === -60
+        ) as Phaser.GameObjects.Text;
+
+        if (nameText) {
+            nameText.setText(username);
+        }
+    }
+
+    private updateOtherPlayers(delta: number): void {
+        const now = Date.now();
+        const deltaSeconds = delta / 1000;
+
+        this.otherPlayers.forEach((otherPlayer, playerId) => {
+            const container = otherPlayer.container;
+
+            // Interpolation avec prédiction
+            const timeSinceUpdate = (now - otherPlayer.lastUpdate) / 1000;
+
+            // Position prédite basée sur la vélocité
+            const predictedX = otherPlayer.targetX + otherPlayer.velocityX * timeSinceUpdate;
+            const predictedY = otherPlayer.targetY + otherPlayer.velocityY * timeSinceUpdate;
+
+            // Interpolation douce vers la position prédite
+            const lerpFactor = 0.15;
+            const newX = container.x + (predictedX - container.x) * lerpFactor;
+            const newY = container.y + (predictedY - container.y) * lerpFactor;
+
+            container.setPosition(newX, newY);
+
+            // Flip sprite based on movement direction
+            const sprite = container.list.find((child) =>
+                child instanceof Phaser.GameObjects.Image
+            ) as Phaser.GameObjects.Image;
+
+            if (sprite && otherPlayer.velocityX !== 0) {
+                sprite.setFlipX(otherPlayer.velocityX < 0);
+            }
+        });
+    }
+
+    // ============================================
+    // CHAT SYSTEM
+    // ============================================
+
+    private createChatUI(): void {
+        const { width, height } = this.cameras.main;
+
+        // Chat container
+        this.chatContainer = this.add.container(20, height - 250);
+        this.chatContainer.setScrollFactor(0);
+        this.chatContainer.setDepth(1000);
+        this.chatContainer.setVisible(false);
+
+        // Chat background
+        const bg = this.add.rectangle(0, 0, 350, 220, 0x111827, 0.9);
+        bg.setOrigin(0, 0);
+        bg.setStrokeStyle(1, 0x00D4FF, 0.3);
+        this.chatContainer.add(bg);
+
+        // Chat title
+        const title = this.add.text(10, 10, '💬 Chat', {
+            fontFamily: '"Segoe UI", sans-serif',
+            fontSize: '14px',
+            color: '#00D4FF',
+            fontStyle: 'bold',
+        });
+        this.chatContainer.add(title);
+
+        // Close button
+        const closeBtn = this.add.text(330, 10, '✕', {
+            fontFamily: '"Segoe UI", sans-serif',
+            fontSize: '14px',
+            color: '#6B7280',
+        });
+        closeBtn.setInteractive({ useHandCursor: true });
+        closeBtn.on('pointerdown', () => this.toggleChat());
+        closeBtn.on('pointerover', () => closeBtn.setColor('#EF4444'));
+        closeBtn.on('pointerout', () => closeBtn.setColor('#6B7280'));
+        this.chatContainer.add(closeBtn);
+
+        // Create HTML input for chat
+        this.createChatInput();
+
+        // Chat toggle button
+        const chatBtn = this.add.text(width - 100, height - 40, '💬 Chat (T)', {
+            fontFamily: '"Segoe UI", sans-serif',
+            fontSize: '12px',
+            color: '#6B7280',
+            backgroundColor: '#111827',
+            padding: { x: 10, y: 5 },
+        });
+        chatBtn.setScrollFactor(0);
+        chatBtn.setDepth(1000);
+        chatBtn.setInteractive({ useHandCursor: true });
+        chatBtn.on('pointerdown', () => this.toggleChat());
+        chatBtn.on('pointerover', () => chatBtn.setColor('#00D4FF'));
+        chatBtn.on('pointerout', () => chatBtn.setColor('#6B7280'));
+    }
+
+    private createChatInput(): void {
+        // Remove existing input if any
+        if (this.chatInput) {
+            this.chatInput.remove();
+        }
+
+        // Create HTML input element
+        this.chatInput = document.createElement('input');
+        this.chatInput.type = 'text';
+        this.chatInput.placeholder = 'Tapez votre message...';
+        this.chatInput.style.position = 'absolute';
+        this.chatInput.style.left = '40px';
+        this.chatInput.style.bottom = '40px';
+        this.chatInput.style.width = '310px';
+        this.chatInput.style.padding = '8px 12px';
+        this.chatInput.style.backgroundColor = '#1F2937';
+        this.chatInput.style.border = '1px solid #00D4FF';
+        this.chatInput.style.borderRadius = '4px';
+        this.chatInput.style.color = '#FFFFFF';
+        this.chatInput.style.fontFamily = 'Segoe UI, sans-serif';
+        this.chatInput.style.fontSize = '14px';
+        this.chatInput.style.outline = 'none';
+        this.chatInput.style.display = 'none';
+        this.chatInput.style.zIndex = '10000';
+
+        this.chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                this.sendChatMessage();
+            } else if (e.key === 'Escape') {
+                this.toggleChat();
+            }
+        });
+
+        document.getElementById('game-container')?.appendChild(this.chatInput);
+    }
+
+    private toggleChat(): void {
+        this.chatVisible = !this.chatVisible;
+        this.chatContainer.setVisible(this.chatVisible);
+
+        if (this.chatInput) {
+            this.chatInput.style.display = this.chatVisible ? 'block' : 'none';
+            if (this.chatVisible) {
+                this.chatInput.focus();
+            } else {
+                this.chatInput.blur();
+            }
+        }
+
+        // Pause game when chat is open
+        this.isPaused = this.chatVisible;
+    }
+
+    private sendChatMessage(): void {
+        if (!this.chatInput || !this.networkManager) return;
+
+        const message = this.chatInput.value.trim();
+        if (message.length === 0) return;
+
+        this.networkManager.sendChatMessage(message);
+        this.chatInput.value = '';
+    }
+
+    private addChatMessage(data: ChatMessage): void {
+        this.chatMessages.push(data);
+        if (this.chatMessages.length > 50) {
+            this.chatMessages.shift();
+        }
+
+        this.updateChatDisplay();
+
+        // Show notification if chat is closed
+        if (!this.chatVisible) {
+            this.showNotification(`💬 ${data.username}: ${data.message.slice(0, 30)}${data.message.length > 30 ? '...' : ''}`);
+        }
+    }
+
+    private updateChatDisplay(): void {
+        // Remove old message texts
+        const oldMessages = this.chatContainer.list.filter((child) =>
+            child instanceof Phaser.GameObjects.Text && child.y > 30 && child.y < 200
+        );
+        oldMessages.forEach((msg) => msg.destroy());
+
+        // Display last 8 messages
+        const messagesToShow = this.chatMessages.slice(-8);
+        const { width, height } = this.cameras.main;
+
+        messagesToShow.forEach((msg, index) => {
+            const y = 40 + index * 22;
+            const isLocalPlayer = msg.playerId === this.networkManager?.getPlayerId();
+            const color = isLocalPlayer ? '#00D4FF' : '#9CA3AF';
+
+            const text = this.add.text(10, y, `${msg.username}: ${msg.message}`, {
+                fontFamily: '"Segoe UI", sans-serif',
+                fontSize: '12px',
+                color: color,
+                wordWrap: { width: 330 },
+            });
+            this.chatContainer.add(text);
+        });
+    }
+
+    // ============================================
+    // ENVIRONMENT
+    // ============================================
 
     private createEnvironment(): void {
         const { width, height } = this.cameras.main;
@@ -181,6 +645,10 @@ export class GameScene extends Phaser.Scene {
         });
     }
 
+    // ============================================
+    // PLAYER
+    // ============================================
+
     private createPlayer(): void {
         this.player = this.add.container(0, 0);
 
@@ -194,7 +662,7 @@ export class GameScene extends Phaser.Scene {
         this.player.add(playerSprite);
 
         // Nom du joueur
-        const nameText = this.add.text(0, -60, 'Agent You', {
+        const nameText = this.add.text(0, -60, this.playerUsername, {
             fontFamily: '"Segoe UI", sans-serif',
             fontSize: '14px',
             color: '#FFFFFF',
@@ -202,6 +670,7 @@ export class GameScene extends Phaser.Scene {
             padding: { x: 8, y: 4 },
         });
         nameText.setOrigin(0.5);
+        nameText.setName('playerName');
         this.player.add(nameText);
 
         // Indicateur de niveau
@@ -235,6 +704,18 @@ export class GameScene extends Phaser.Scene {
         body.setSize(40, 80);
     }
 
+    private updatePlayerUsername(username: string): void {
+        this.playerUsername = username;
+        const nameText = this.player.getByName('playerName') as Phaser.GameObjects.Text;
+        if (nameText) {
+            nameText.setText(username);
+        }
+    }
+
+    // ============================================
+    // CONTROLS
+    // ============================================
+
     private setupControls(): void {
         // Flèches directionnelles
         this.cursors = this.input.keyboard!.createCursorKeys();
@@ -249,7 +730,25 @@ export class GameScene extends Phaser.Scene {
 
         // Touche Échap pour le menu pause
         this.input.keyboard!.on('keydown-ESC', () => {
-            this.togglePause();
+            if (this.chatVisible) {
+                this.toggleChat();
+            } else {
+                this.togglePause();
+            }
+        });
+
+        // Touche T pour le chat
+        this.input.keyboard!.on('keydown-T', () => {
+            if (!this.chatVisible) {
+                this.toggleChat();
+            }
+        });
+
+        // Touche Entrée pour envoyer un message
+        this.input.keyboard!.on('keydown-ENTER', () => {
+            if (this.chatVisible && document.activeElement !== this.chatInput) {
+                this.toggleChat();
+            }
         });
     }
 
@@ -276,11 +775,24 @@ export class GameScene extends Phaser.Scene {
 
         // Normalisation pour éviter la vitesse plus rapide en diagonale
         body.velocity.normalize().scale(speed);
+
+        // Flip sprite based on direction
+        const playerSprite = this.player.list.find((child) =>
+            child instanceof Phaser.GameObjects.Image
+        ) as Phaser.GameObjects.Image;
+
+        if (playerSprite && body.velocity.x !== 0) {
+            playerSprite.setFlipX(body.velocity.x < 0);
+        }
     }
 
     private updateEnvironmentAnimations(): void {
         // Mettre à jour les animations d'environnement si nécessaire
     }
+
+    // ============================================
+    // HUD
+    // ============================================
 
     private createHUD(): void {
         const { width, height } = this.cameras.main;
@@ -305,12 +817,34 @@ export class GameScene extends Phaser.Scene {
         hudContainer.add(pauseBtn);
 
         // Instructions
-        const instructions = this.add.text(20, height - 40, 'WASD / Flèches pour bouger • ESC pour pause', {
+        const instructions = this.add.text(20, height - 40, 'WASD / Flèches pour bouger • ESC pour pause • T pour chat', {
             fontFamily: '"Segoe UI", sans-serif',
             fontSize: '12px',
             color: '#6B7280',
         });
         hudContainer.add(instructions);
+
+        // Connection status
+        const statusText = this.add.text(width - 150, 20, '🟡 Connexion...', {
+            fontFamily: '"Segoe UI", sans-serif',
+            fontSize: '12px',
+            color: '#6B7280',
+        });
+        statusText.setName('connectionStatus');
+        statusText.setScrollFactor(0);
+        statusText.setDepth(1000);
+
+        // Update status periodically
+        this.time.addEvent({
+            delay: 1000,
+            callback: () => {
+                const status = this.isConnected ? '🟢 En ligne' : '🔴 Hors ligne';
+                const color = this.isConnected ? '#22C55E' : '#EF4444';
+                statusText.setText(status);
+                statusText.setColor(color);
+            },
+            loop: true,
+        });
     }
 
     private createStyledBar(
@@ -343,6 +877,10 @@ export class GameScene extends Phaser.Scene {
         container.add(text);
     }
 
+    // ============================================
+    // MINIMAP
+    // ============================================
+
     private createMinimap(): void {
         const { width, height } = this.cameras.main;
 
@@ -361,7 +899,7 @@ export class GameScene extends Phaser.Scene {
         neon.setScrollFactor(0);
         neon.setDepth(999);
 
-        // Texte
+        // Label
         const label = this.add.text(mapX + mapSize / 2, mapY + mapSize / 2, 'MINIMAP', {
             fontFamily: '"Segoe UI", sans-serif',
             fontSize: '12px',
@@ -370,7 +908,54 @@ export class GameScene extends Phaser.Scene {
         label.setOrigin(0.5);
         label.setScrollFactor(0);
         label.setDepth(1001);
+
+        // Player dot (will be updated)
+        const playerDot = this.add.rectangle(mapX + mapSize / 2, mapY + mapSize / 2, 6, 6, 0xFF6B35);
+        playerDot.setScrollFactor(0);
+        playerDot.setDepth(1002);
+        playerDot.setName('minimapPlayer');
     }
+
+    private updateMinimap(): void {
+        const mapSize = 150;
+        const mapX = this.cameras.main.width - mapSize - 20;
+        const mapY = this.cameras.main.height - mapSize - 20;
+        const scale = mapSize / 2000; // Map is 2000x2000
+
+        // Update player dot
+        const playerDot = this.children.getByName('minimapPlayer') as Phaser.GameObjects.Rectangle;
+        if (playerDot) {
+            const x = mapX + mapSize / 2 + this.player.x * scale;
+            const y = mapY + mapSize / 2 + this.player.y * scale;
+            playerDot.setPosition(
+                Phaser.Math.Clamp(x, mapX + 3, mapX + mapSize - 3),
+                Phaser.Math.Clamp(y, mapY + 3, mapY + mapSize - 3)
+            );
+        }
+
+        // Update other players dots
+        this.otherPlayers.forEach((otherPlayer, playerId) => {
+            let dot = this.minimapPlayers.get(playerId);
+            if (!dot) {
+                dot = this.add.rectangle(0, 0, 4, 4, 0x00D4FF);
+                dot.setScrollFactor(0);
+                dot.setDepth(1001);
+                this.minimapPlayers.set(playerId, dot);
+            }
+
+            const x = mapX + mapSize / 2 + otherPlayer.container.x * scale;
+            const y = mapY + mapSize / 2 + otherPlayer.container.y * scale;
+            dot.setPosition(
+                Phaser.Math.Clamp(x, mapX + 2, mapX + mapSize - 2),
+                Phaser.Math.Clamp(y, mapY + 2, mapY + mapSize - 2)
+            );
+            dot.setVisible(true);
+        });
+    }
+
+    // ============================================
+    // UI HELPERS
+    // ============================================
 
     private showWelcomeMessage(): void {
         const { width, height } = this.cameras.main;
@@ -395,7 +980,7 @@ export class GameScene extends Phaser.Scene {
         container.add(title);
 
         // Message
-        const message = this.add.text(0, 10, 'Utilise WASD ou les flèches pour te déplacer\nExplore la ville et livre des pizzas !', {
+        const message = this.add.text(0, 10, 'Utilise WASD ou les flèches pour te déplacer\nAppuie sur T pour discuter avec les autres agents !', {
             fontFamily: '"Segoe UI", sans-serif',
             fontSize: '14px',
             color: '#9CA3AF',
@@ -429,6 +1014,45 @@ export class GameScene extends Phaser.Scene {
         });
     }
 
+    private showNotification(text: string): void {
+        const { width, height } = this.cameras.main;
+
+        const notification = this.add.text(width / 2, 100, text, {
+            fontFamily: '"Segoe UI", sans-serif',
+            fontSize: '16px',
+            color: '#FFFFFF',
+            backgroundColor: '#111827',
+            padding: { x: 20, y: 10 },
+        });
+        notification.setOrigin(0.5);
+        notification.setScrollFactor(0);
+        notification.setDepth(3000);
+        notification.setAlpha(0);
+
+        this.tweens.add({
+            targets: notification,
+            alpha: 1,
+            y: 80,
+            duration: 300,
+            ease: 'Power2',
+        });
+
+        this.time.delayedCall(3000, () => {
+            this.tweens.add({
+                targets: notification,
+                alpha: 0,
+                y: 60,
+                duration: 300,
+                ease: 'Power2',
+                onComplete: () => notification.destroy(),
+            });
+        });
+    }
+
+    // ============================================
+    // PAUSE MENU
+    // ============================================
+
     private togglePause(): void {
         this.isPaused = !this.isPaused;
 
@@ -449,14 +1073,14 @@ export class GameScene extends Phaser.Scene {
         (this as any).pauseOverlay = overlay;
 
         // Menu
-        const menuBg = this.add.rectangle(width / 2, height / 2, 350, 300, 0x111827, 0.95);
+        const menuBg = this.add.rectangle(width / 2, height / 2, 350, 350, 0x111827, 0.95);
         menuBg.setStrokeStyle(2, 0x00D4FF, 0.5);
         menuBg.setScrollFactor(0);
         menuBg.setDepth(2001);
         (this as any).pauseMenu = menuBg;
 
         // Titre
-        const title = this.add.text(width / 2, height / 2 - 100, 'PAUSE', {
+        const title = this.add.text(width / 2, height / 2 - 130, 'PAUSE', {
             fontFamily: '"Segoe UI", sans-serif',
             fontSize: '32px',
             color: '#00D4FF',
@@ -466,15 +1090,28 @@ export class GameScene extends Phaser.Scene {
         title.setScrollFactor(0);
         title.setDepth(2001);
 
+        // Username input
+        const usernameLabel = this.add.text(width / 2, height / 2 - 80, 'Votre nom:', {
+            fontFamily: '"Segoe UI", sans-serif',
+            fontSize: '14px',
+            color: '#9CA3AF',
+        });
+        usernameLabel.setOrigin(0.5);
+        usernameLabel.setScrollFactor(0);
+        usernameLabel.setDepth(2001);
+
+        // Create username input
+        this.createUsernameInput();
+
         // Options
         const options = [
             { text: 'Reprendre', action: () => this.togglePause() },
-            { text: 'Options', action: () => { } },
+            { text: 'Chat (T)', action: () => { this.togglePause(); this.toggleChat(); } },
             { text: 'Retour au menu', action: () => this.scene.start('MenuScene') },
         ];
 
         options.forEach((opt, i) => {
-            const y = height / 2 - 30 + i * 60;
+            const y = height / 2 + i * 50;
             const btn = this.add.text(width / 2, y, opt.text, {
                 fontFamily: '"Segoe UI", sans-serif',
                 fontSize: '20px',
@@ -491,14 +1128,81 @@ export class GameScene extends Phaser.Scene {
         });
     }
 
+    private createUsernameInput(): void {
+        // Remove existing input if any
+        const existingInput = document.getElementById('username-input');
+        if (existingInput) existingInput.remove();
+
+        const input = document.createElement('input');
+        input.id = 'username-input';
+        input.type = 'text';
+        input.value = this.playerUsername;
+        input.placeholder = 'Entrez votre nom';
+        input.style.position = 'absolute';
+        input.style.left = '50%';
+        input.style.top = '50%';
+        input.style.transform = 'translate(-50%, -50%) translateY(-45px)';
+        input.style.width = '200px';
+        input.style.padding = '8px 12px';
+        input.style.backgroundColor = '#1F2937';
+        input.style.border = '1px solid #00D4FF';
+        input.style.borderRadius = '4px';
+        input.style.color = '#FFFFFF';
+        input.style.fontFamily = 'Segoe UI, sans-serif';
+        input.style.fontSize = '14px';
+        input.style.outline = 'none';
+        input.style.zIndex = '10000';
+
+        input.addEventListener('change', () => {
+            const newUsername = input.value.trim();
+            if (newUsername.length >= 2) {
+                this.playerUsername = newUsername;
+                localStorage.setItem('playerUsername', newUsername);
+                this.updatePlayerUsername(newUsername);
+                if (this.networkManager) {
+                    this.networkManager.setUsername(newUsername);
+                }
+            }
+        });
+
+        document.getElementById('game-container')?.appendChild(input);
+        input.focus();
+    }
+
     private hidePauseMenu(): void {
         if ((this as any).pauseOverlay) {
             (this as any).pauseOverlay.destroy();
         }
 
+        // Remove username input
+        const usernameInput = document.getElementById('username-input');
+        if (usernameInput) usernameInput.remove();
+
         // Nettoyer tous les éléments de pause
         this.children.list
             .filter((child: any) => child.depth >= 2000)
             .forEach((child: any) => child.destroy());
+    }
+
+    // ============================================
+    // CLEANUP
+    // ============================================
+
+    shutdown(): void {
+        // Clean up chat input
+        if (this.chatInput) {
+            this.chatInput.remove();
+        }
+
+        // Remove username input
+        const usernameInput = document.getElementById('username-input');
+        if (usernameInput) usernameInput.remove();
+
+        // Stop latency check
+        if (this.latencyCheckInterval && this.networkManager) {
+            this.networkManager.stopLatencyCheck(this.latencyCheckInterval);
+        }
+
+        console.log('🎮 GameScene: Shutdown');
     }
 }
