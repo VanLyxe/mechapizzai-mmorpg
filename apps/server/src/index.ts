@@ -27,6 +27,19 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        version: '0.2.0',
+        environment: process.env.NODE_ENV || 'development',
+        players: players.size,
+        rooms: rooms.size,
+    });
+});
+
 // ============================================
 // TYPES & INTERFACES
 // ============================================
