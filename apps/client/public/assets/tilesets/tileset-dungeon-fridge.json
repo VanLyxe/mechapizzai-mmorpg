@@ -1,0 +1,19 @@
+{
+  "id": "tileset-dungeon-fridge",
+  "category": "tilesets",
+  "filename": "tileset-dungeon-fridge.png",
+  "generatedAt": "2026-02-16T13:35:02.895Z",
+  "api": "NanoBanana Pro",
+  "taskId": "5eb2fccd98432e253902b4c199d893e3",
+  "imageUrl": "https://tempfile.aiquickdraw.com/images/1771248895735-5y4xiwo0jxm.png",
+  "config": {
+    "aspect_ratio": "1:1",
+    "resolution": "2K",
+    "output_format": "png"
+  },
+  "phaser": {
+    "type": "image",
+    "tileWidth": 32,
+    "tileHeight": 32
+  }
+}

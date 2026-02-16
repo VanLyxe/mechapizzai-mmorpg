@@ -1,0 +1,140 @@
+{
+  "generatedAt": "2026-02-16T13:47:02.462Z",
+  "total": 27,
+  "success": 22,
+  "failed": 5,
+  "assets": [
+    {
+      "id": "player-knight",
+      "category": "characters",
+      "filename": "player-knight.png"
+    },
+    {
+      "id": "player-mage",
+      "category": "characters",
+      "filename": "player-mage.png"
+    },
+    {
+      "id": "player-rogue",
+      "category": "characters",
+      "filename": "player-rogue.png"
+    },
+    {
+      "id": "player-engineer",
+      "category": "characters",
+      "filename": "player-engineer.png"
+    },
+    {
+      "id": "tileset-urban-ground",
+      "category": "tilesets",
+      "filename": "tileset-urban-ground.png"
+    },
+    {
+      "id": "tileset-urban-walls",
+      "category": "tilesets",
+      "filename": "tileset-urban-walls.png"
+    },
+    {
+      "id": "tileset-interior",
+      "category": "tilesets",
+      "filename": "tileset-interior.png"
+    },
+    {
+      "id": "tileset-dungeon-oven",
+      "category": "tilesets",
+      "filename": "tileset-dungeon-oven.png"
+    },
+    {
+      "id": "tileset-dungeon-fridge",
+      "category": "tilesets",
+      "filename": "tileset-dungeon-fridge.png"
+    },
+    {
+      "id": "ui-buttons",
+      "category": "ui",
+      "filename": "ui-buttons.png"
+    },
+    {
+      "id": "ui-inventory",
+      "category": "ui",
+      "filename": "ui-inventory.png"
+    },
+    {
+      "id": "ui-minimap",
+      "category": "ui",
+      "filename": "ui-minimap.png"
+    },
+    {
+      "id": "effects-fire",
+      "category": "effects",
+      "filename": "effects-fire.png"
+    },
+    {
+      "id": "effects-ice",
+      "category": "effects",
+      "filename": "effects-ice.png"
+    },
+    {
+      "id": "effects-heal",
+      "category": "effects",
+      "filename": "effects-heal.png"
+    },
+    {
+      "id": "effects-impacts",
+      "category": "effects",
+      "filename": "effects-impacts.png"
+    },
+    {
+      "id": "effects-auras",
+      "category": "effects",
+      "filename": "effects-auras.png"
+    },
+    {
+      "id": "items-weapons",
+      "category": "items",
+      "filename": "items-weapons.png"
+    },
+    {
+      "id": "items-armor",
+      "category": "items",
+      "filename": "items-armor.png"
+    },
+    {
+      "id": "items-pizza-buffs",
+      "category": "items",
+      "filename": "items-pizza-buffs.png"
+    },
+    {
+      "id": "logo-game",
+      "category": "logo",
+      "filename": "logo-game.png"
+    },
+    {
+      "id": "title-screen",
+      "category": "logo",
+      "filename": "title-screen.png"
+    }
+  ],
+  "failures": [
+    {
+      "id": "ui-bars",
+      "error": "Erreur API: aspect_ratio is not within the range of allowed options"
+    },
+    {
+      "id": "ui-font",
+      "error": "Erreur API: aspect_ratio is not within the range of allowed options"
+    },
+    {
+      "id": "items-consumables",
+      "error": "Erreur API: aspect_ratio is not within the range of allowed options"
+    },
+    {
+      "id": "items-quest",
+      "error": "Erreur API: aspect_ratio is not within the range of allowed options"
+    },
+    {
+      "id": "class-icons",
+      "error": "Erreur API: aspect_ratio is not within the range of allowed options"
+    }
+  ]
+}

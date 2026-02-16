@@ -1,0 +1,17 @@
+{
+  "id": "logo-game",
+  "category": "logo",
+  "filename": "logo-game.png",
+  "generatedAt": "2026-02-16T13:45:59.107Z",
+  "api": "NanoBanana Pro",
+  "taskId": "32ab1752dad0ad46a6a11bd96ade238f",
+  "imageUrl": "https://tempfile.aiquickdraw.com/images/1771249552783-v0cqa8rk9nk.png",
+  "config": {
+    "aspect_ratio": "1:1",
+    "resolution": "2K",
+    "output_format": "png"
+  },
+  "phaser": {
+    "type": "image"
+  }
+}

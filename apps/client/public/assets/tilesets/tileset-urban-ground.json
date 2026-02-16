@@ -1,0 +1,19 @@
+{
+  "id": "tileset-urban-ground",
+  "category": "tilesets",
+  "filename": "tileset-urban-ground.png",
+  "generatedAt": "2026-02-16T13:31:38.861Z",
+  "api": "NanoBanana Pro",
+  "taskId": "3cd47adbccf85b75220625b1ee2d1564",
+  "imageUrl": "https://tempfile.aiquickdraw.com/images/1771248694286-pn1rs8zhkj.png",
+  "config": {
+    "aspect_ratio": "16:9",
+    "resolution": "2K",
+    "output_format": "png"
+  },
+  "phaser": {
+    "type": "image",
+    "tileWidth": 32,
+    "tileHeight": 32
+  }
+}

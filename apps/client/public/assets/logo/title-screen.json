@@ -1,0 +1,17 @@
+{
+  "id": "title-screen",
+  "category": "logo",
+  "filename": "title-screen.png",
+  "generatedAt": "2026-02-16T13:47:00.266Z",
+  "api": "NanoBanana Pro",
+  "taskId": "5adfbdaec214e07503160c753b0d5307",
+  "imageUrl": "https://tempfile.aiquickdraw.com/images/1771249615775-girxt1c8x05.png",
+  "config": {
+    "aspect_ratio": "16:9",
+    "resolution": "2K",
+    "output_format": "png"
+  },
+  "phaser": {
+    "type": "image"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "items-pizza-buffs",
+  "category": "items",
+  "filename": "items-pizza-buffs.png",
+  "generatedAt": "2026-02-16T13:45:08.052Z",
+  "api": "NanoBanana Pro",
+  "taskId": "7d815a65e87e8126b234ceafded80a13",
+  "imageUrl": "https://tempfile.aiquickdraw.com/images/1771249503987-s3fmybfogql.png",
+  "config": {
+    "aspect_ratio": "1:1",
+    "resolution": "2K",
+    "output_format": "png"
+  },
+  "phaser": {
+    "type": "image"
+  }
+}

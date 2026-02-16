@@ -1,0 +1,19 @@
+{
+  "id": "effects-fire",
+  "category": "effects",
+  "filename": "effects-fire.png",
+  "generatedAt": "2026-02-16T13:38:23.529Z",
+  "api": "NanoBanana Pro",
+  "taskId": "ca662dada90b93a48eac6e7190f0e99f",
+  "imageUrl": "https://tempfile.aiquickdraw.com/images/1771249093960-luyybophug.png",
+  "config": {
+    "aspect_ratio": "1:1",
+    "resolution": "2K",
+    "output_format": "png"
+  },
+  "phaser": {
+    "type": "spritesheet",
+    "frameWidth": 64,
+    "frameHeight": 64
+  }
+}

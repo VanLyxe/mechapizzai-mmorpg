@@ -1,0 +1,19 @@
+{
+  "id": "effects-ice",
+  "category": "effects",
+  "filename": "effects-ice.png",
+  "generatedAt": "2026-02-16T13:39:24.710Z",
+  "api": "NanoBanana Pro",
+  "taskId": "dc8b2ed8c49d695211756afdb401ee03",
+  "imageUrl": "https://tempfile.aiquickdraw.com/images/1771249157678-xuw1xphpyk.png",
+  "config": {
+    "aspect_ratio": "1:1",
+    "resolution": "2K",
+    "output_format": "png"
+  },
+  "phaser": {
+    "type": "spritesheet",
+    "frameWidth": 64,
+    "frameHeight": 64
+  }
+}

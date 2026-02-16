@@ -1,0 +1,17 @@
+{
+  "id": "ui-inventory",
+  "category": "ui",
+  "filename": "ui-inventory.png",
+  "generatedAt": "2026-02-16T13:36:29.907Z",
+  "api": "NanoBanana Pro",
+  "taskId": "5ba4b6be453abfc30b1d333b0d85a4e0",
+  "imageUrl": "https://tempfile.aiquickdraw.com/images/1771248981778-m9mmpqrm12b.png",
+  "config": {
+    "aspect_ratio": "1:1",
+    "resolution": "2K",
+    "output_format": "png"
+  },
+  "phaser": {
+    "type": "image"
+  }
+}

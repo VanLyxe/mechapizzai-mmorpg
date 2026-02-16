@@ -32,6 +32,7 @@ interface ChatMessage {
 
 export class GameScene extends Phaser.Scene {
     private player!: Phaser.GameObjects.Container;
+    private playerSprite!: Phaser.GameObjects.Sprite;
     private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
     private wasd!: { [key: string]: Phaser.Input.Keyboard.Key };
     private otherPlayers: Map<string, OtherPlayer> = new Map();
@@ -57,12 +58,48 @@ export class GameScene extends Phaser.Scene {
     // Username
     private playerUsername: string = 'Agent You';
 
+    // Player Class Selection
+    private playerClass: 'knight' | 'mage' | 'rogue' | 'engineer' = 'knight';
+    private isMoving: boolean = false;
+    private lastDirection: string = 'down';
+
     constructor() {
         super({ key: 'GameScene' });
     }
 
     preload(): void {
-        // Charger les assets SVG
+        // Charger les assets PNG générés par NanoBanana Pro
+        // Sprites personnages
+        this.load.spritesheet('player-knight', 'assets/characters/player-knight.png', {
+            frameWidth: 64,
+            frameHeight: 64
+        });
+        this.load.spritesheet('player-mage', 'assets/characters/player-mage.png', {
+            frameWidth: 64,
+            frameHeight: 64
+        });
+        this.load.spritesheet('player-rogue', 'assets/characters/player-rogue.png', {
+            frameWidth: 64,
+            frameHeight: 64
+        });
+        this.load.spritesheet('player-engineer', 'assets/characters/player-engineer.png', {
+            frameWidth: 64,
+            frameHeight: 64
+        });
+
+        // Tilesets
+        this.load.image('tileset-urban-ground', 'assets/tilesets/tileset-urban-ground.png');
+        this.load.image('tileset-urban-walls', 'assets/tilesets/tileset-urban-walls.png');
+
+        // UI
+        this.load.image('ui-bars', 'assets/ui/ui-bars.png');
+        this.load.image('ui-buttons', 'assets/ui/ui-buttons.png');
+        this.load.image('ui-minimap', 'assets/ui/ui-minimap.png');
+
+        // Logo
+        this.load.image('logo-game', 'assets/logo/logo-game.png');
+
+        // Assets legacy SVG
         this.load.svg('player', 'assets/player.svg', { width: 64, height: 96 });
         this.load.svg('logo', 'assets/logo.svg', { width: 200, height: 100 });
     }
@@ -650,19 +687,36 @@ export class GameScene extends Phaser.Scene {
     // ============================================
 
     private createPlayer(): void {
+        // Récupérer la classe sélectionnée depuis le localStorage
+        const storedClass = localStorage.getItem('playerClass') as 'knight' | 'mage' | 'rogue' | 'engineer';
+        if (storedClass && ['knight', 'mage', 'rogue', 'engineer'].includes(storedClass)) {
+            this.playerClass = storedClass;
+        }
+
         this.player = this.add.container(0, 0);
 
         // Ombre sous le personnage
-        const shadow = this.add.ellipse(0, 45, 40, 15, 0x000000, 0.3);
+        const shadow = this.add.ellipse(0, 25, 40, 15, 0x000000, 0.3);
         this.player.add(shadow);
 
-        // Sprite du joueur
-        const playerSprite = this.add.image(0, 0, 'player');
-        playerSprite.setScale(0.8);
-        this.player.add(playerSprite);
+        // Sprite du joueur avec spritesheet NanoBanana
+        const spriteKey = `player-${this.playerClass}`;
+        if (this.textures.exists(spriteKey)) {
+            this.playerSprite = this.add.sprite(0, 0, spriteKey, 0);
+            this.playerSprite.setScale(1);
+            this.player.add(this.playerSprite);
+
+            // Démarrer l'animation idle
+            this.playAnimation('idle', 'down');
+        } else {
+            // Fallback sur l'ancien sprite SVG
+            const fallbackSprite = this.add.image(0, 0, 'player');
+            fallbackSprite.setScale(0.8);
+            this.player.add(fallbackSprite);
+        }
 
         // Nom du joueur
-        const nameText = this.add.text(0, -60, this.playerUsername, {
+        const nameText = this.add.text(0, -45, this.playerUsername, {
             fontFamily: '"Segoe UI", sans-serif',
             fontSize: '14px',
             color: '#FFFFFF',
@@ -673,26 +727,22 @@ export class GameScene extends Phaser.Scene {
         nameText.setName('playerName');
         this.player.add(nameText);
 
-        // Indicateur de niveau
-        const levelBadge = this.add.text(25, -50, '1', {
+        // Indicateur de niveau avec couleur selon la classe
+        const classColors = {
+            knight: '#00D4FF', // Cyan
+            mage: '#FF1493',   // Rose
+            rogue: '#00FF00',  // Vert
+            engineer: '#FF6B35' // Orange
+        };
+        const levelBadge = this.add.text(25, -35, '1', {
             fontFamily: '"Segoe UI", sans-serif',
             fontSize: '11px',
             color: '#0A0E1A',
-            backgroundColor: '#FF6B35',
+            backgroundColor: classColors[this.playerClass],
             padding: { x: 6, y: 2 },
         });
         levelBadge.setOrigin(0.5);
         this.player.add(levelBadge);
-
-        // Animation idle
-        this.tweens.add({
-            targets: playerSprite,
-            y: { from: 0, to: -3 },
-            duration: 1500,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut',
-        });
 
         // Caméra suit le joueur
         this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
@@ -701,7 +751,34 @@ export class GameScene extends Phaser.Scene {
         this.physics.world.enable(this.player);
         const body = this.player.body as Phaser.Physics.Arcade.Body;
         body.setCollideWorldBounds(true);
-        body.setSize(40, 80);
+        body.setSize(32, 32);
+    }
+
+    /**
+     * Joue une animation sur le sprite du joueur
+     */
+    private playAnimation(animType: 'idle' | 'walk' | 'attack' | 'skill', direction: string): void {
+        if (!this.playerSprite) return;
+
+        const animKey = `${this.playerClass}-${animType}-${direction}`;
+        if (this.anims.exists(animKey)) {
+            this.playerSprite.play(animKey, true);
+        }
+    }
+
+    /**
+     * Définit la classe du joueur
+     */
+    public setPlayerClass(playerClass: 'knight' | 'mage' | 'rogue' | 'engineer'): void {
+        this.playerClass = playerClass;
+        localStorage.setItem('playerClass', playerClass);
+
+        // Mettre à jour le sprite si possible
+        const spriteKey = `player-${playerClass}`;
+        if (this.playerSprite && this.textures.exists(spriteKey)) {
+            this.playerSprite.setTexture(spriteKey);
+            this.playAnimation('idle', 'down');
+        }
     }
 
     private updatePlayerUsername(username: string): void {
@@ -759,30 +836,58 @@ export class GameScene extends Phaser.Scene {
         // Reset velocity
         body.setVelocity(0);
 
+        let moving = false;
+        let direction = this.lastDirection;
+
         // Mouvement horizontal
         if (this.cursors.left?.isDown || this.wasd.A.isDown) {
             body.setVelocityX(-speed);
+            direction = 'left';
+            moving = true;
         } else if (this.cursors.right?.isDown || this.wasd.D.isDown) {
             body.setVelocityX(speed);
+            direction = 'right';
+            moving = true;
         }
 
         // Mouvement vertical
         if (this.cursors.up?.isDown || this.wasd.W.isDown) {
             body.setVelocityY(-speed);
+            direction = 'up';
+            moving = true;
         } else if (this.cursors.down?.isDown || this.wasd.S.isDown) {
             body.setVelocityY(speed);
+            direction = 'down';
+            moving = true;
         }
 
         // Normalisation pour éviter la vitesse plus rapide en diagonale
         body.velocity.normalize().scale(speed);
 
-        // Flip sprite based on direction
-        const playerSprite = this.player.list.find((child) =>
-            child instanceof Phaser.GameObjects.Image
-        ) as Phaser.GameObjects.Image;
-
-        if (playerSprite && body.velocity.x !== 0) {
-            playerSprite.setFlipX(body.velocity.x < 0);
+        // Gérer les animations du sprite
+        if (this.playerSprite) {
+            if (moving) {
+                if (!this.isMoving || direction !== this.lastDirection) {
+                    this.playAnimation('walk', direction);
+                    this.isMoving = true;
+                    this.lastDirection = direction;
+                }
+                // Flip sprite si on va à gauche
+                this.playerSprite.setFlipX(direction === 'left');
+            } else {
+                if (this.isMoving) {
+                    this.playAnimation('idle', this.lastDirection);
+                    this.isMoving = false;
+                }
+            }
+        } else {
+            // Fallback pour l'ancien sprite Image
+            const playerImage = this.player.list.find((child) =>
+                child instanceof Phaser.GameObjects.Image
+            ) as Phaser.GameObjects.Image;
+            if (playerImage && body.velocity.x !== 0) {
+                playerImage.setFlipX(body.velocity.x < 0);
+            }
         }
     }
 

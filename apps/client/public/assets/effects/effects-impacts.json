@@ -1,0 +1,19 @@
+{
+  "id": "effects-impacts",
+  "category": "effects",
+  "filename": "effects-impacts.png",
+  "generatedAt": "2026-02-16T13:41:18.029Z",
+  "api": "NanoBanana Pro",
+  "taskId": "524b46b0e73290079b9cbde3405a8cbc",
+  "imageUrl": "https://tempfile.aiquickdraw.com/images/1771249270993-kul83wduvfh.png",
+  "config": {
+    "aspect_ratio": "1:1",
+    "resolution": "2K",
+    "output_format": "png"
+  },
+  "phaser": {
+    "type": "spritesheet",
+    "frameWidth": 64,
+    "frameHeight": 64
+  }
+}

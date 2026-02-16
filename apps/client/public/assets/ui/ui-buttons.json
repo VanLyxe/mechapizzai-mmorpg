@@ -1,0 +1,17 @@
+{
+  "id": "ui-buttons",
+  "category": "ui",
+  "filename": "ui-buttons.png",
+  "generatedAt": "2026-02-16T13:35:44.462Z",
+  "api": "NanoBanana Pro",
+  "taskId": "800c2780108919b8225c2e2636918273",
+  "imageUrl": "https://tempfile.aiquickdraw.com/images/1771248936699-k8jrlan3iys.png",
+  "config": {
+    "aspect_ratio": "1:1",
+    "resolution": "2K",
+    "output_format": "png"
+  },
+  "phaser": {
+    "type": "image"
+  }
+}

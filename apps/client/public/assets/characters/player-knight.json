@@ -1,0 +1,19 @@
+{
+  "id": "player-knight",
+  "category": "characters",
+  "filename": "player-knight.png",
+  "generatedAt": "2026-02-16T13:49:50.704Z",
+  "api": "NanoBanana Pro",
+  "taskId": "50906305e11bd629c060af8afafc3805",
+  "imageUrl": "https://tempfile.aiquickdraw.com/images/1771249782943-c8r3zf97s74.png",
+  "config": {
+    "aspect_ratio": "1:1",
+    "resolution": "2K",
+    "output_format": "png"
+  },
+  "phaser": {
+    "type": "spritesheet",
+    "frameWidth": 64,
+    "frameHeight": 64
+  }
+}

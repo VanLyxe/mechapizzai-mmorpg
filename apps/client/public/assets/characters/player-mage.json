@@ -1,0 +1,19 @@
+{
+  "id": "player-mage",
+  "category": "characters",
+  "filename": "player-mage.png",
+  "generatedAt": "2026-02-16T13:50:51.322Z",
+  "api": "NanoBanana Pro",
+  "taskId": "9130902a6602a0ebda90998fbf98a5a0",
+  "imageUrl": "https://tempfile.aiquickdraw.com/images/1771249844435-gniqyhyhbq5.png",
+  "config": {
+    "aspect_ratio": "1:1",
+    "resolution": "2K",
+    "output_format": "png"
+  },
+  "phaser": {
+    "type": "spritesheet",
+    "frameWidth": 64,
+    "frameHeight": 64
+  }
+}

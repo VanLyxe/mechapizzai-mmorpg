@@ -1,0 +1,19 @@
+{
+  "id": "player-engineer",
+  "category": "characters",
+  "filename": "player-engineer.png",
+  "generatedAt": "2026-02-16T13:30:16.154Z",
+  "api": "NanoBanana Pro",
+  "taskId": "5c669530d9f775751b06a970f733e35c",
+  "imageUrl": "https://tempfile.aiquickdraw.com/images/1771248607289-79hgxojvj2c.png",
+  "config": {
+    "aspect_ratio": "1:1",
+    "resolution": "2K",
+    "output_format": "png"
+  },
+  "phaser": {
+    "type": "spritesheet",
+    "frameWidth": 64,
+    "frameHeight": 64
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "id": "effects-heal",
+  "category": "effects",
+  "filename": "effects-heal.png",
+  "generatedAt": "2026-02-16T13:40:26.619Z",
+  "api": "NanoBanana Pro",
+  "taskId": "5928c0f8c35686c819baf6bdba215899",
+  "imageUrl": "https://tempfile.aiquickdraw.com/images/1771249221619-lyzg35h8lq.png",
+  "config": {
+    "aspect_ratio": "1:1",
+    "resolution": "2K",
+    "output_format": "png"
+  },
+  "phaser": {
+    "type": "spritesheet",
+    "frameWidth": 64,
+    "frameHeight": 64
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "items-armor",
+  "category": "items",
+  "filename": "items-armor.png",
+  "generatedAt": "2026-02-16T13:44:04.876Z",
+  "api": "NanoBanana Pro",
+  "taskId": "65c7bad1135ecfaf8df15297f7be2d0b",
+  "imageUrl": "https://tempfile.aiquickdraw.com/images/1771249439098-vvz5z4wyd1p.png",
+  "config": {
+    "aspect_ratio": "1:1",
+    "resolution": "2K",
+    "output_format": "png"
+  },
+  "phaser": {
+    "type": "image"
+  }
+}

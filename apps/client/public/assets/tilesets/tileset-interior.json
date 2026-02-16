@@ -1,0 +1,19 @@
+{
+  "id": "tileset-interior",
+  "category": "tilesets",
+  "filename": "tileset-interior.png",
+  "generatedAt": "2026-02-16T13:33:09.783Z",
+  "api": "NanoBanana Pro",
+  "taskId": "a2acec2c3ce10cfd68d4b367951ab983",
+  "imageUrl": "https://tempfile.aiquickdraw.com/images/1771248783396-ytkgdzevuir.png",
+  "config": {
+    "aspect_ratio": "1:1",
+    "resolution": "2K",
+    "output_format": "png"
+  },
+  "phaser": {
+    "type": "image",
+    "tileWidth": 32,
+    "tileHeight": 32
+  }
+}

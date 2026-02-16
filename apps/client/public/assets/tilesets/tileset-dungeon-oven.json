@@ -1,0 +1,19 @@
+{
+  "id": "tileset-dungeon-oven",
+  "category": "tilesets",
+  "filename": "tileset-dungeon-oven.png",
+  "generatedAt": "2026-02-16T13:34:11.319Z",
+  "api": "NanoBanana Pro",
+  "taskId": "f27274946336d18a8831f5af47e0ab4f",
+  "imageUrl": "https://tempfile.aiquickdraw.com/images/1771248846611-z93nv1icjk.png",
+  "config": {
+    "aspect_ratio": "1:1",
+    "resolution": "2K",
+    "output_format": "png"
+  },
+  "phaser": {
+    "type": "image",
+    "tileWidth": 32,
+    "tileHeight": 32
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "id": "effects-auras",
+  "category": "effects",
+  "filename": "effects-auras.png",
+  "generatedAt": "2026-02-16T13:42:19.094Z",
+  "api": "NanoBanana Pro",
+  "taskId": "91cdbcead4ae399f78c12d3bcebcc43b",
+  "imageUrl": "https://tempfile.aiquickdraw.com/images/1771249331633-csdnjxojqhh.png",
+  "config": {
+    "aspect_ratio": "1:1",
+    "resolution": "2K",
+    "output_format": "png"
+  },
+  "phaser": {
+    "type": "spritesheet",
+    "frameWidth": 64,
+    "frameHeight": 64
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "items-weapons",
+  "category": "items",
+  "filename": "items-weapons.png",
+  "generatedAt": "2026-02-16T13:43:14.685Z",
+  "api": "NanoBanana Pro",
+  "taskId": "acee4fec48d45c62e321110268203f04",
+  "imageUrl": "https://tempfile.aiquickdraw.com/images/1771249390038-102hrlog3rbr.png",
+  "config": {
+    "aspect_ratio": "1:1",
+    "resolution": "2K",
+    "output_format": "png"
+  },
+  "phaser": {
+    "type": "image"
+  }
+}

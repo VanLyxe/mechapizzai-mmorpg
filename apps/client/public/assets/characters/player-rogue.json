@@ -1,0 +1,19 @@
+{
+  "id": "player-rogue",
+  "category": "characters",
+  "filename": "player-rogue.png",
+  "generatedAt": "2026-02-16T13:51:41.603Z",
+  "api": "NanoBanana Pro",
+  "taskId": "a595a256c62726a1c99b0b8a970b87f8",
+  "imageUrl": "https://tempfile.aiquickdraw.com/images/1771249892891-8ej645ukg0w.png",
+  "config": {
+    "aspect_ratio": "1:1",
+    "resolution": "2K",
+    "output_format": "png"
+  },
+  "phaser": {
+    "type": "spritesheet",
+    "frameWidth": 64,
+    "frameHeight": 64
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "id": "tileset-urban-walls",
+  "category": "tilesets",
+  "filename": "tileset-urban-walls.png",
+  "generatedAt": "2026-02-16T13:32:18.940Z",
+  "api": "NanoBanana Pro",
+  "taskId": "474ec742a4418bf4c79045ebe10e8f6b",
+  "imageUrl": "https://tempfile.aiquickdraw.com/images/1771248734634-d7gfya5icmc.png",
+  "config": {
+    "aspect_ratio": "16:9",
+    "resolution": "2K",
+    "output_format": "png"
+  },
+  "phaser": {
+    "type": "image",
+    "tileWidth": 32,
+    "tileHeight": 32
+  }
+}

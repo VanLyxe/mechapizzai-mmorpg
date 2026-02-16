@@ -1,0 +1,17 @@
+{
+  "id": "ui-minimap",
+  "category": "ui",
+  "filename": "ui-minimap.png",
+  "generatedAt": "2026-02-16T13:37:31.066Z",
+  "api": "NanoBanana Pro",
+  "taskId": "ac04a577673b1cc9e237f6e0e473022b",
+  "imageUrl": "https://tempfile.aiquickdraw.com/images/1771249044097-2uxq62wgk3h.png",
+  "config": {
+    "aspect_ratio": "1:1",
+    "resolution": "2K",
+    "output_format": "png"
+  },
+  "phaser": {
+    "type": "image"
+  }
+}

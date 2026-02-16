@@ -116,7 +116,7 @@ export class MenuScene extends Phaser.Scene {
 
     private createParticles(): void {
         // Créer une texture pour les particules
-        const graphics = this.make.graphics({ x: 0, y: 0, add: false });
+        const graphics = this.make.graphics({ x: 0, y: 0 });
         graphics.fillStyle(0x00D4FF, 1);
         graphics.fillCircle(4, 4, 4);
         graphics.generateTexture('particle', 8, 8);
@@ -336,8 +336,9 @@ export class MenuScene extends Phaser.Scene {
         if (item.scene) {
             // Transition vers la scène avec effet
             this.cameras.main.fadeOut(500, 10, 14, 26);
+            const sceneName = item.scene;
             this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-                this.scene.start(item.scene);
+                this.scene.start(sceneName);
             });
         } else {
             // Message temporaire pour les options non implémentées
