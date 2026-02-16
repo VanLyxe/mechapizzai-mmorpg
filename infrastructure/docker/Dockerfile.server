@@ -1,0 +1,27 @@
+# Dockerfile pour le serveur MechaPizzAI
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copie des fichiers de configuration
+COPY package*.json ./
+COPY turbo.json ./
+COPY packages/shared/package*.json ./packages/shared/
+COPY apps/server/package*.json ./apps/server/
+
+# Installation des dépendances
+RUN npm ci
+
+# Copie du code source
+COPY packages/shared ./packages/shared
+COPY apps/server ./apps/server
+
+# Build
+RUN npm run build --workspace=@mechapizzai/shared
+RUN npm run build --workspace=@mechapizzai/server
+
+# Exposition du port
+EXPOSE 3001
+
+# Démarrage
+CMD ["node", "apps/server/dist/index.js"]

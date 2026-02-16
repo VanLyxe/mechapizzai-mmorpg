@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # Client (Nginx)
+  client:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.client
+    ports:
+      - "3000:80"
+    depends_on:
+      - server
+    networks:
+      - mechapizzai-network
+
+  # Server (Node.js)
+  server:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.server
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - CLIENT_URL=http://localhost:3000
+      - DATABASE_URL=postgresql://mechapizzai:password@postgres:5432/mechapizzai
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - mechapizzai-network
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=mechapizzai
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=mechapizzai
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - mechapizzai-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - mechapizzai-network
+
+volumes:
+  postgres-data:
+  redis-data:
+
+networks:
+  mechapizzai-network:
+    driver: bridge

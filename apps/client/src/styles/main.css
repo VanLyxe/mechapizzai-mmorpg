@@ -1,0 +1,525 @@
+/* ============================================
+   MechaPizzAI MMORPG - Styles Principaux
+   Basé sur le Design System MechaHelp
+   ============================================ */
+
+/* Variables CSS - Design System */
+:root {
+    /* Couleurs principales */
+    --color-cyan: #00D4FF;
+    --color-cyan-dark: #0099CC;
+    --color-orange: #FF6B35;
+    --color-orange-dark: #CC5529;
+    --color-green: #10B981;
+    --color-red: #EF4444;
+    --color-yellow: #F59E0B;
+
+    /* Fonds */
+    --bg-dark: #0A0E1A;
+    --bg-card: #111827;
+    --bg-secondary: #1F2937;
+    --bg-tertiary: #374151;
+
+    /* Texte */
+    --text-primary: #FFFFFF;
+    --text-secondary: #9CA3AF;
+    --text-muted: #6B7280;
+
+    /* Effets */
+    --glow-cyan: 0 0 20px rgba(0, 212, 255, 0.5);
+    --glow-cyan-strong: 0 0 40px rgba(0, 212, 255, 0.8);
+    --glow-orange: 0 0 20px rgba(255, 107, 53, 0.5);
+    --glow-orange-strong: 0 0 40px rgba(255, 107, 53, 0.8);
+
+    /* Bordures */
+    --border-cyan: 1px solid rgba(0, 212, 255, 0.3);
+    --border-orange: 1px solid rgba(255, 107, 53, 0.3);
+
+    /* Espacement */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+
+    /* Rayons */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-full: 9999px;
+
+    /* Transitions */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.2s ease;
+    --transition-slow: 0.3s ease;
+
+    /* Typographie */
+    --font-ui: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    --font-pixel: 'Press Start 2P', monospace;
+}
+
+/* Reset & Base */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    font-family: var(--font-ui);
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+/* Game Container */
+#game-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+}
+
+#game-container canvas {
+    display: block;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+/* UI Overlay */
+#root {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 10;
+    pointer-events: none;
+}
+
+#root>* {
+    pointer-events: auto;
+}
+
+/* ============================================
+   Composants UI
+   ============================================ */
+
+/* Boutons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-5);
+    border-radius: var(--radius-md);
+    font-family: var(--font-ui);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--color-cyan) 0%, var(--color-cyan-dark) 100%);
+    color: var(--bg-dark);
+    box-shadow: var(--glow-cyan);
+}
+
+.btn-primary:hover {
+    box-shadow: var(--glow-cyan-strong);
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, var(--color-orange) 0%, var(--color-orange-dark) 100%);
+    color: var(--text-primary);
+    box-shadow: var(--glow-orange);
+}
+
+.btn-secondary:hover {
+    box-shadow: var(--glow-orange-strong);
+    transform: translateY(-2px);
+}
+
+.btn-outline {
+    background: transparent;
+    color: var(--color-cyan);
+    border: 2px solid var(--color-cyan);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+}
+
+.btn-outline:hover {
+    background: rgba(0, 212, 255, 0.1);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+}
+
+/* Cartes */
+.card {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    border: var(--border-cyan);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transition: all var(--transition-normal);
+}
+
+.card:hover {
+    border-color: rgba(0, 212, 255, 0.4);
+    box-shadow: 0 0 30px rgba(0, 212, 255, 0.1);
+}
+
+/* Badges */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.badge-cyan {
+    background: rgba(0, 212, 255, 0.2);
+    color: var(--color-cyan);
+    border: var(--border-cyan);
+}
+
+.badge-orange {
+    background: rgba(255, 107, 53, 0.2);
+    color: var(--color-orange);
+    border: var(--border-orange);
+}
+
+/* Inputs */
+.input {
+    background: var(--bg-dark);
+    border: 2px solid var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-4);
+    color: var(--text-primary);
+    font-size: 16px;
+    font-family: var(--font-ui);
+    width: 100%;
+    transition: all var(--transition-normal);
+}
+
+.input:focus {
+    outline: none;
+    border-color: var(--color-cyan);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+}
+
+.input::placeholder {
+    color: var(--text-muted);
+}
+
+/* Progress Bars */
+.progress-bar {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-full);
+    height: 8px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    background: linear-gradient(90deg, var(--color-cyan), var(--color-cyan-dark));
+    height: 100%;
+    border-radius: var(--radius-full);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+    transition: width var(--transition-slow);
+}
+
+/* ============================================
+   HUD (Heads-Up Display)
+   ============================================ */
+
+.hud-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 100;
+}
+
+.hud-panel {
+    background: rgba(17, 24, 39, 0.95);
+    backdrop-filter: blur(10px);
+    border: var(--border-cyan);
+    border-radius: var(--radius-lg);
+    pointer-events: auto;
+}
+
+.hud-top-left {
+    position: absolute;
+    top: var(--space-4);
+    left: var(--space-4);
+}
+
+.hud-top-right {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-4);
+}
+
+.hud-bottom-left {
+    position: absolute;
+    bottom: var(--space-4);
+    left: var(--space-4);
+}
+
+.hud-bottom-right {
+    position: absolute;
+    bottom: var(--space-4);
+    right: var(--space-4);
+}
+
+/* ============================================
+   Chat In-Game
+   ============================================ */
+
+.chat-container {
+    position: absolute;
+    bottom: var(--space-4);
+    left: var(--space-4);
+    width: 400px;
+    max-height: 300px;
+    background: rgba(10, 14, 26, 0.95);
+    border: var(--border-cyan);
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-3);
+}
+
+.chat-message {
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid rgba(55, 65, 81, 0.5);
+    font-size: 14px;
+}
+
+.chat-username {
+    color: var(--color-cyan);
+    font-weight: 600;
+    margin-right: var(--space-2);
+}
+
+.chat-text {
+    color: var(--text-primary);
+}
+
+.chat-input-container {
+    padding: var(--space-3);
+    border-top: var(--border-cyan);
+}
+
+/* ============================================
+   Minimap
+   ============================================ */
+
+.minimap {
+    width: 200px;
+    height: 200px;
+    background: rgba(17, 24, 39, 0.9);
+    border: 2px solid rgba(0, 212, 255, 0.3);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+}
+
+/* ============================================
+   Animations
+   ============================================ */
+
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 0 40px rgba(0, 212, 255, 0.6);
+    }
+}
+
+@keyframes slide-in {
+    from {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes bounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-slide-in {
+    animation: slide-in 0.3s ease;
+}
+
+.animate-fade-in {
+    animation: fade-in 0.3s ease;
+}
+
+.animate-bounce {
+    animation: bounce 0.5s ease;
+}
+
+/* ============================================
+   Utilitaires
+   ============================================ */
+
+.text-cyan {
+    color: var(--color-cyan);
+}
+
+.text-orange {
+    color: var(--color-orange);
+}
+
+.text-green {
+    color: var(--color-green);
+}
+
+.text-red {
+    color: var(--color-red);
+}
+
+.text-yellow {
+    color: var(--color-yellow);
+}
+
+.text-muted {
+    color: var(--text-muted);
+}
+
+.bg-dark {
+    background-color: var(--bg-dark);
+}
+
+.bg-card {
+    background-color: var(--bg-card);
+}
+
+.bg-secondary {
+    background-color: var(--bg-secondary);
+}
+
+.font-pixel {
+    font-family: var(--font-pixel);
+}
+
+.font-ui {
+    font-family: var(--font-ui);
+}
+
+.hidden {
+    display: none !important;
+}
+
+.invisible {
+    visibility: hidden;
+}
+
+.pointer-events-none {
+    pointer-events: none;
+}
+
+.pointer-events-auto {
+    pointer-events: auto;
+}
+
+/* Scrollbar personnalisée */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-dark);
+    border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-cyan);
+}
+
+/* Sélection de texte */
+::selection {
+    background: rgba(0, 212, 255, 0.3);
+    color: var(--text-primary);
+}
+
+/* Focus visible pour accessibilité */
+:focus-visible {
+    outline: 2px solid var(--color-cyan);
+    outline-offset: 2px;
+}
+
+/* Réduction des animations si demandé */
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
