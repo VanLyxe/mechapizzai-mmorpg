@@ -1,144 +1,229 @@
 import Phaser from 'phaser';
 
 /**
- * GameScene - Scène principale du jeu
+ * GameScene - Version Soft améliorée visuellement
  * 
- * Gère :
- * - La carte/level
- * - Le joueur local
- * - Les autres joueurs (multijoueur)
- * - Les interactions
- * - Le HUD
+ * Features :
+ * - Personnage SVG stylisé
+ * - Environnement cyberpunk avec néons
+ * - Effets de lumière
+ * - HUD moderne
  */
 export class GameScene extends Phaser.Scene {
     private player!: Phaser.GameObjects.Container;
     private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
     private wasd!: { [key: string]: Phaser.Input.Keyboard.Key };
     private otherPlayers: Map<string, Phaser.GameObjects.Container> = new Map();
-    private map!: Phaser.Tilemaps.Tilemap;
     private isPaused: boolean = false;
+    private mapContainer!: Phaser.GameObjects.Container;
 
     constructor() {
         super({ key: 'GameScene' });
     }
 
+    preload(): void {
+        // Charger les assets SVG
+        this.load.svg('player', 'assets/player.svg', { width: 64, height: 96 });
+        this.load.svg('logo', 'assets/logo.svg', { width: 200, height: 100 });
+    }
+
     create(): void {
         console.log('🎮 GameScene: Début du jeu !');
 
-        // Création de la carte
-        this.createMap();
-
-        // Création du joueur
+        this.createEnvironment();
         this.createPlayer();
-
-        // Configuration des contrôles
         this.setupControls();
-
-        // Création du HUD
         this.createHUD();
-
-        // Connexion au serveur (à implémenter)
-        this.connectToServer();
+        this.createMinimap();
 
         // Animation d'entrée
         this.cameras.main.fadeIn(500, 10, 14, 26);
+
+        // Message de bienvenue
+        this.showWelcomeMessage();
     }
 
     update(time: number, delta: number): void {
         if (this.isPaused) return;
 
         this.handlePlayerMovement();
+        this.updateEnvironmentAnimations();
     }
 
-    private createMap(): void {
+    private createEnvironment(): void {
         const { width, height } = this.cameras.main;
 
-        // Pour l'instant, on crée une carte procédurale simple
-        // Plus tard, on chargera des cartes Tiled
+        this.mapContainer = this.add.container(0, 0);
 
-        // Fond
-        this.add.rectangle(width / 2, height / 2, width * 2, height * 2, 0x1F2937);
+        // Sol avec grille
+        const gridGraphics = this.add.graphics();
+        gridGraphics.lineStyle(1, 0x1F2937, 0.5);
 
-        // Grille de référence
-        const graphics = this.add.graphics();
-        graphics.lineStyle(1, 0x374151, 0.5);
-
-        for (let x = -1000; x <= 1000; x += 64) {
-            graphics.moveTo(x, -1000);
-            graphics.lineTo(x, 1000);
+        for (let x = -1000; x <= 1000; x += 50) {
+            gridGraphics.moveTo(x, -1000);
+            gridGraphics.lineTo(x, 1000);
         }
-
-        for (let y = -1000; y <= 1000; y += 64) {
-            graphics.moveTo(-1000, y);
-            graphics.lineTo(1000, y);
+        for (let y = -1000; y <= 1000; y += 50) {
+            gridGraphics.moveTo(-1000, y);
+            gridGraphics.lineTo(1000, y);
         }
+        gridGraphics.strokePath();
+        this.mapContainer.add(gridGraphics);
 
-        graphics.strokePath();
+        // Bâtiments cyberpunk stylisés
+        this.createCyberpunkBuildings();
 
-        // Quelques éléments décoratifs
-        this.createDecorations();
+        // Néons et lumières
+        this.createNeonLights();
 
         // Configuration de la caméra
         this.cameras.main.setBounds(-1000, -1000, 2000, 2000);
     }
 
-    private createDecorations(): void {
-        // Bâtiments/structures simples
-        const colors = [0x111827, 0x1F2937, 0x374151];
+    private createCyberpunkBuildings(): void {
+        const buildingPositions = [
+            { x: -400, y: -300, w: 120, h: 200, color: 0x111827 },
+            { x: 300, y: -400, w: 100, h: 250, color: 0x1F2937 },
+            { x: -200, y: 350, w: 140, h: 180, color: 0x111827 },
+            { x: 450, y: 200, w: 90, h: 220, color: 0x1F2937 },
+            { x: -500, y: 150, w: 110, h: 190, color: 0x111827 },
+            { x: 150, y: -250, w: 130, h: 210, color: 0x1F2937 },
+        ];
 
-        for (let i = 0; i < 20; i++) {
-            const x = Phaser.Math.Between(-800, 800);
-            const y = Phaser.Math.Between(-800, 800);
-            const width = Phaser.Math.Between(64, 192);
-            const height = Phaser.Math.Between(64, 192);
-            const color = Phaser.Utils.Array.GetRandom(colors);
+        buildingPositions.forEach((pos, index) => {
+            const building = this.createStyledBuilding(pos.x, pos.y, pos.w, pos.h, pos.color, index);
+            this.mapContainer.add(building);
+        });
+    }
 
-            const building = this.add.rectangle(x, y, width, height, color);
-            building.setStrokeStyle(2, 0x00D4FF, 0.3);
+    private createStyledBuilding(x: number, y: number, w: number, h: number, color: number, index: number): Phaser.GameObjects.Container {
+        const container = this.add.container(x, y);
 
-            // Lumière sur le bâtiment
-            const light = this.add.circle(x, y - height / 2, 5, 0x00D4FF, 0.8);
+        // Corps du bâtiment
+        const body = this.add.rectangle(0, 0, w, h, color);
+        body.setStrokeStyle(2, 0x00D4FF, 0.3);
+        container.add(body);
 
-            // Animation de la lumière
+        // Bande lumineuse en haut
+        const topLight = this.add.rectangle(0, -h / 2 + 5, w - 10, 6, 0x00D4FF, 0.8);
+        container.add(topLight);
+
+        // Fenêtres avec lumières aléatoires
+        const rows = Math.floor(h / 30);
+        const cols = Math.floor(w / 25);
+
+        for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < cols; col++) {
+                if (Math.random() > 0.4) {
+                    const winX = (col - cols / 2 + 0.5) * 20;
+                    const winY = (row - rows / 2 + 0.5) * 25;
+                    const isLit = Math.random() > 0.6;
+                    const winColor = isLit ? (Math.random() > 0.5 ? 0x00D4FF : 0xFF6B35) : 0x374151;
+                    const winAlpha = isLit ? 0.9 : 0.3;
+
+                    const window = this.add.rectangle(winX, winY, 12, 16, winColor, winAlpha);
+                    container.add(window);
+
+                    // Animation clignotante pour certaines fenêtres
+                    if (isLit && Math.random() > 0.8) {
+                        this.tweens.add({
+                            targets: window,
+                            alpha: { from: winAlpha, to: winAlpha * 0.3 },
+                            duration: 1000 + Math.random() * 2000,
+                            yoyo: true,
+                            repeat: -1,
+                            ease: 'Sine.easeInOut',
+                        });
+                    }
+                }
+            }
+        }
+
+        return container;
+    }
+
+    private createNeonLights(): void {
+        const neonPositions = [
+            { x: -300, y: -200, color: 0x00D4FF, radius: 80 },
+            { x: 400, y: -100, color: 0xFF6B35, radius: 100 },
+            { x: -100, y: 300, color: 0x00D4FF, radius: 60 },
+            { x: 300, y: 400, color: 0xFF6B35, radius: 90 },
+        ];
+
+        neonPositions.forEach((neon) => {
+            // Cercle de lumière
+            const light = this.add.circle(neon.x, neon.y, neon.radius, neon.color, 0.1);
+            this.mapContainer.add(light);
+
+            // Point lumineux central
+            const core = this.add.circle(neon.x, neon.y, 8, neon.color, 0.9);
+            this.mapContainer.add(core);
+
+            // Animation pulsante
             this.tweens.add({
                 targets: light,
-                alpha: { from: 0.8, to: 0.3 },
-                duration: Phaser.Math.Between(1000, 2000),
+                scale: { from: 1, to: 1.2 },
+                alpha: { from: 0.1, to: 0.2 },
+                duration: 2000,
                 yoyo: true,
                 repeat: -1,
+                ease: 'Sine.easeInOut',
             });
-        }
+
+            this.tweens.add({
+                targets: core,
+                alpha: { from: 0.9, to: 0.5 },
+                duration: 1500,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut',
+            });
+        });
     }
 
     private createPlayer(): void {
-        // Container pour le joueur (sprite + nom)
         this.player = this.add.container(0, 0);
 
-        // Sprite du joueur (carré temporaire, sera remplacé par un vrai sprite)
-        const playerSprite = this.add.rectangle(0, 0, 32, 48, 0x00D4FF);
-        playerSprite.setStrokeStyle(2, 0xFFFFFF);
+        // Ombre sous le personnage
+        const shadow = this.add.ellipse(0, 45, 40, 15, 0x000000, 0.3);
+        this.player.add(shadow);
+
+        // Sprite du joueur
+        const playerSprite = this.add.image(0, 0, 'player');
+        playerSprite.setScale(0.8);
+        this.player.add(playerSprite);
 
         // Nom du joueur
-        const nameText = this.add.text(0, -35, 'Agent You', {
-            fontFamily: 'Inter, sans-serif',
-            fontSize: '12px',
+        const nameText = this.add.text(0, -60, 'Agent You', {
+            fontFamily: '"Segoe UI", sans-serif',
+            fontSize: '14px',
             color: '#FFFFFF',
             backgroundColor: '#00000080',
-            padding: { x: 4, y: 2 },
+            padding: { x: 8, y: 4 },
         });
         nameText.setOrigin(0.5);
+        this.player.add(nameText);
 
         // Indicateur de niveau
-        const levelBadge = this.add.text(20, -25, '1', {
-            fontFamily: 'Inter, sans-serif',
-            fontSize: '10px',
+        const levelBadge = this.add.text(25, -50, '1', {
+            fontFamily: '"Segoe UI", sans-serif',
+            fontSize: '11px',
             color: '#0A0E1A',
             backgroundColor: '#FF6B35',
-            padding: { x: 4, y: 1 },
+            padding: { x: 6, y: 2 },
         });
         levelBadge.setOrigin(0.5);
+        this.player.add(levelBadge);
 
-        this.player.add([playerSprite, nameText, levelBadge]);
+        // Animation idle
+        this.tweens.add({
+            targets: playerSprite,
+            y: { from: 0, to: -3 },
+            duration: 1500,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+        });
 
         // Caméra suit le joueur
         this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
@@ -147,7 +232,7 @@ export class GameScene extends Phaser.Scene {
         this.physics.world.enable(this.player);
         const body = this.player.body as Phaser.Physics.Arcade.Body;
         body.setCollideWorldBounds(true);
-        body.setSize(32, 48);
+        body.setSize(40, 80);
     }
 
     private setupControls(): void {
@@ -165,11 +250,6 @@ export class GameScene extends Phaser.Scene {
         // Touche Échap pour le menu pause
         this.input.keyboard!.on('keydown-ESC', () => {
             this.togglePause();
-        });
-
-        // Touche T pour le chat
-        this.input.keyboard!.on('keydown-T', () => {
-            this.openChat();
         });
     }
 
@@ -196,9 +276,10 @@ export class GameScene extends Phaser.Scene {
 
         // Normalisation pour éviter la vitesse plus rapide en diagonale
         body.velocity.normalize().scale(speed);
+    }
 
-        // Envoi de la position au serveur (à implémenter)
-        // this.networkManager.sendPlayerPosition(this.player.x, this.player.y);
+    private updateEnvironmentAnimations(): void {
+        // Mettre à jour les animations d'environnement si nécessaire
     }
 
     private createHUD(): void {
@@ -209,58 +290,151 @@ export class GameScene extends Phaser.Scene {
         hudContainer.setScrollFactor(0);
         hudContainer.setDepth(1000);
 
-        // Barre de vie
-        const healthBarBg = this.add.rectangle(20, 20, 200, 20, 0x1F2937);
-        healthBarBg.setOrigin(0, 0);
-        const healthBarFill = this.add.rectangle(22, 22, 196, 16, 0xEF4444);
-        healthBarFill.setOrigin(0, 0);
+        // Barre de vie stylisée
+        this.createStyledBar(hudContainer, 20, 20, 200, 24, 0xEF4444, 1, 'HP: 100/100');
 
         // Barre d'énergie
-        const energyBarBg = this.add.rectangle(20, 45, 200, 20, 0x1F2937);
-        energyBarBg.setOrigin(0, 0);
-        const energyBarFill = this.add.rectangle(22, 47, 150, 16, 0x00D4FF);
-        energyBarFill.setOrigin(0, 0);
+        this.createStyledBar(hudContainer, 20, 50, 200, 24, 0x00D4FF, 0.75, 'EN: 75/100');
 
-        // Texte infos
-        const infoText = this.add.text(20, 70, 'HP: 100/100 | EN: 75/100', {
-            fontFamily: 'Inter, sans-serif',
-            fontSize: '12px',
-            color: '#9CA3AF',
-        });
+        // Bouton pause
+        const pauseBtn = this.add.text(width - 30, 30, '⏸️', {
+            fontSize: '24px',
+        }).setInteractive({ useHandCursor: true });
+        pauseBtn.setOrigin(0.5);
+        pauseBtn.on('pointerdown', () => this.togglePause());
+        hudContainer.add(pauseBtn);
 
-        // Mini-carte (placeholder)
-        const minimapBg = this.add.rectangle(width - 110, height - 110, 200, 200, 0x111827, 0.9);
-        minimapBg.setStrokeStyle(2, 0x00D4FF, 0.5);
-        const minimapText = this.add.text(width - 110, height - 110, 'MINIMAP', {
-            fontFamily: 'Inter, sans-serif',
+        // Instructions
+        const instructions = this.add.text(20, height - 40, 'WASD / Flèches pour bouger • ESC pour pause', {
+            fontFamily: '"Segoe UI", sans-serif',
             fontSize: '12px',
             color: '#6B7280',
         });
-        minimapText.setOrigin(0.5);
+        hudContainer.add(instructions);
+    }
 
-        // Bouton pause
-        const pauseBtn = this.add.text(width - 40, 20, '⏸️', {
+    private createStyledBar(
+        container: Phaser.GameObjects.Container,
+        x: number,
+        y: number,
+        width: number,
+        height: number,
+        color: number,
+        fillPercent: number,
+        label: string
+    ): void {
+        // Fond
+        const bg = this.add.rectangle(x + width / 2, y + height / 2, width, height, 0x1F2937, 0.9);
+        bg.setStrokeStyle(1, color, 0.3);
+        container.add(bg);
+
+        // Remplissage
+        const fillWidth = (width - 4) * fillPercent;
+        const fill = this.add.rectangle(x + 2 + fillWidth / 2, y + height / 2, fillWidth, height - 4, color, 0.9);
+        container.add(fill);
+
+        // Label
+        const text = this.add.text(x + width / 2, y + height / 2, label, {
+            fontFamily: '"Segoe UI", sans-serif',
+            fontSize: '11px',
+            color: '#FFFFFF',
+        });
+        text.setOrigin(0.5);
+        container.add(text);
+    }
+
+    private createMinimap(): void {
+        const { width, height } = this.cameras.main;
+
+        const mapSize = 150;
+        const mapX = width - mapSize - 20;
+        const mapY = height - mapSize - 20;
+
+        // Fond
+        const bg = this.add.rectangle(mapX + mapSize / 2, mapY + mapSize / 2, mapSize, mapSize, 0x111827, 0.9);
+        bg.setStrokeStyle(2, 0x00D4FF, 0.5);
+        bg.setScrollFactor(0);
+        bg.setDepth(1000);
+
+        // Bordure néon
+        const neon = this.add.rectangle(mapX + mapSize / 2, mapY + mapSize / 2, mapSize + 4, mapSize + 4, 0x00D4FF, 0.2);
+        neon.setScrollFactor(0);
+        neon.setDepth(999);
+
+        // Texte
+        const label = this.add.text(mapX + mapSize / 2, mapY + mapSize / 2, 'MINIMAP', {
+            fontFamily: '"Segoe UI", sans-serif',
+            fontSize: '12px',
+            color: '#6B7280',
+        });
+        label.setOrigin(0.5);
+        label.setScrollFactor(0);
+        label.setDepth(1001);
+    }
+
+    private showWelcomeMessage(): void {
+        const { width, height } = this.cameras.main;
+
+        const container = this.add.container(width / 2, height / 2);
+        container.setScrollFactor(0);
+        container.setDepth(2000);
+
+        // Fond
+        const bg = this.add.rectangle(0, 0, 400, 150, 0x111827, 0.95);
+        bg.setStrokeStyle(2, 0x00D4FF, 0.5);
+        container.add(bg);
+
+        // Titre
+        const title = this.add.text(0, -30, 'Bienvenue à Neo-Pizzapolis !', {
+            fontFamily: '"Segoe UI", sans-serif',
             fontSize: '24px',
-        }).setInteractive({ useHandCursor: true });
-        pauseBtn.on('pointerdown', () => this.togglePause());
+            color: '#00D4FF',
+            fontStyle: 'bold',
+        });
+        title.setOrigin(0.5);
+        container.add(title);
 
-        hudContainer.add([
-            healthBarBg, healthBarFill,
-            energyBarBg, energyBarFill,
-            infoText,
-            minimapBg, minimapText,
-            pauseBtn,
-        ]);
+        // Message
+        const message = this.add.text(0, 10, 'Utilise WASD ou les flèches pour te déplacer\nExplore la ville et livre des pizzas !', {
+            fontFamily: '"Segoe UI", sans-serif',
+            fontSize: '14px',
+            color: '#9CA3AF',
+            align: 'center',
+        });
+        message.setOrigin(0.5);
+        container.add(message);
+
+        // Animation d'entrée
+        container.setScale(0);
+        container.setAlpha(0);
+
+        this.tweens.add({
+            targets: container,
+            scale: 1,
+            alpha: 1,
+            duration: 500,
+            ease: 'Back.easeOut',
+        });
+
+        // Disparition après 4 secondes
+        this.time.delayedCall(4000, () => {
+            this.tweens.add({
+                targets: container,
+                alpha: 0,
+                scale: 0.8,
+                duration: 300,
+                ease: 'Power2',
+                onComplete: () => container.destroy(),
+            });
+        });
     }
 
     private togglePause(): void {
         this.isPaused = !this.isPaused;
 
         if (this.isPaused) {
-            // Afficher le menu pause
             this.showPauseMenu();
         } else {
-            // Cacher le menu pause
             this.hidePauseMenu();
         }
     }
@@ -275,42 +449,45 @@ export class GameScene extends Phaser.Scene {
         (this as any).pauseOverlay = overlay;
 
         // Menu
-        const menuBg = this.add.rectangle(width / 2, height / 2, 300, 250, 0x111827);
-        menuBg.setStrokeStyle(2, 0x00D4FF);
+        const menuBg = this.add.rectangle(width / 2, height / 2, 350, 300, 0x111827, 0.95);
+        menuBg.setStrokeStyle(2, 0x00D4FF, 0.5);
         menuBg.setScrollFactor(0);
         menuBg.setDepth(2001);
         (this as any).pauseMenu = menuBg;
 
         // Titre
-        const title = this.add.text(width / 2, height / 2 - 80, 'PAUSE', {
-            fontFamily: '"Press Start 2P", monospace',
-            fontSize: '24px',
+        const title = this.add.text(width / 2, height / 2 - 100, 'PAUSE', {
+            fontFamily: '"Segoe UI", sans-serif',
+            fontSize: '32px',
             color: '#00D4FF',
+            fontStyle: 'bold',
         });
         title.setOrigin(0.5);
         title.setScrollFactor(0);
         title.setDepth(2001);
 
         // Options
-        const options = ['Reprendre', 'Options', 'Quitter'];
+        const options = [
+            { text: 'Reprendre', action: () => this.togglePause() },
+            { text: 'Options', action: () => { } },
+            { text: 'Retour au menu', action: () => this.scene.start('MenuScene') },
+        ];
+
         options.forEach((opt, i) => {
-            const y = height / 2 - 20 + i * 50;
-            const text = this.add.text(width / 2, y, opt, {
-                fontFamily: 'Inter, sans-serif',
-                fontSize: '18px',
+            const y = height / 2 - 30 + i * 60;
+            const btn = this.add.text(width / 2, y, opt.text, {
+                fontFamily: '"Segoe UI", sans-serif',
+                fontSize: '20px',
                 color: '#FFFFFF',
             });
-            text.setOrigin(0.5);
-            text.setScrollFactor(0);
-            text.setDepth(2001);
-            text.setInteractive({ useHandCursor: true });
+            btn.setOrigin(0.5);
+            btn.setScrollFactor(0);
+            btn.setDepth(2001);
+            btn.setInteractive({ useHandCursor: true });
 
-            text.on('pointerover', () => text.setColor('#00D4FF'));
-            text.on('pointerout', () => text.setColor('#FFFFFF'));
-            text.on('pointerdown', () => {
-                if (opt === 'Reprendre') this.togglePause();
-                if (opt === 'Quitter') this.scene.start('MenuScene');
-            });
+            btn.on('pointerover', () => btn.setColor('#00D4FF'));
+            btn.on('pointerout', () => btn.setColor('#FFFFFF'));
+            btn.on('pointerdown', opt.action);
         });
     }
 
@@ -318,48 +495,10 @@ export class GameScene extends Phaser.Scene {
         if ((this as any).pauseOverlay) {
             (this as any).pauseOverlay.destroy();
         }
-        if ((this as any).pauseMenu) {
-            (this as any).pauseMenu.destroy();
-        }
 
         // Nettoyer tous les éléments de pause
         this.children.list
-            .filter(child => child.depth >= 2000)
-            .forEach(child => child.destroy());
-    }
-
-    private openChat(): void {
-        // À implémenter : ouvrir l'interface de chat
-        console.log('💬 Ouverture du chat...');
-    }
-
-    private connectToServer(): void {
-        // À implémenter : connexion Socket.io au serveur
-        console.log('🌐 Connexion au serveur...');
-
-        // Simulation de joueurs connectés
-        this.addOtherPlayer('player_2', 200, 100, 'Agent Pizza');
-        this.addOtherPlayer('player_3', -150, 200, 'Agent Bot');
-    }
-
-    private addOtherPlayer(id: string, x: number, y: number, name: string): void {
-        const container = this.add.container(x, y);
-
-        // Sprite
-        const sprite = this.add.rectangle(0, 0, 32, 48, 0xFF6B35);
-        sprite.setStrokeStyle(2, 0xFFFFFF);
-
-        // Nom
-        const nameText = this.add.text(0, -35, name, {
-            fontFamily: 'Inter, sans-serif',
-            fontSize: '12px',
-            color: '#FFFFFF',
-            backgroundColor: '#00000080',
-            padding: { x: 4, y: 2 },
-        });
-        nameText.setOrigin(0.5);
-
-        container.add([sprite, nameText]);
-        this.otherPlayers.set(id, container);
+            .filter((child: any) => child.depth >= 2000)
+            .forEach((child: any) => child.destroy());
     }
 }

@@ -3,10 +3,6 @@
     "version": "0.1.0",
     "description": "MMORPG Pixel Art pour la communauté MechaPizzAI - Agents, Pizza & Aventure!",
     "private": true,
-    "workspaces": [
-        "apps/*",
-        "packages/*"
-    ],
     "scripts": {
         "dev": "turbo run dev",
         "build": "turbo run build",

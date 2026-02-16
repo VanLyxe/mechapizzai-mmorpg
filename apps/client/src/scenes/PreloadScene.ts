@@ -2,12 +2,13 @@ import Phaser from 'phaser';
 
 /**
  * PreloadScene - Scène de préchargement des assets
- * 
- * Charge tous les assets nécessaires au jeu :
- * - Sprites et animations
- * - Tilesets
- * - Audio
- * - Fonts
+ *
+ * Charge tous les assets SVG nécessaires au jeu :
+ * - Sprites (joueur, PNJ)
+ * - Tilesets (sol)
+ * - UI (icônes)
+ * - Items (pizza)
+ * - Logo
  */
 export class PreloadScene extends Phaser.Scene {
     constructor() {
@@ -22,64 +23,49 @@ export class PreloadScene extends Phaser.Scene {
         this.load.setPath('assets/');
 
         // ====================
-        // SPRITES
+        // SPRITES SVG
         // ====================
 
-        // Player sprites (à remplacer par de vrais assets)
-        // this.load.spritesheet('player_idle', 'sprites/player/idle.png', {
-        //   frameWidth: 32,
-        //   frameHeight: 48,
-        // });
-        // this.load.spritesheet('player_walk', 'sprites/player/walk.png', {
-        //   frameWidth: 32,
-        //   frameHeight: 48,
-        // });
+        // Joueur robot (64x96)
+        this.load.svg('player', 'player.svg', { width: 64, height: 96 });
 
-        // NPC sprites
-        // this.load.spritesheet('npc_agent', 'sprites/npcs/agent.png', {
-        //   frameWidth: 32,
-        //   frameHeight: 48,
-        // });
+        // PNJ client (64x96)
+        this.load.svg('npc-customer', 'npc-customer.svg', { width: 64, height: 96 });
 
         // ====================
         // TILESETS
         // ====================
 
-        // this.load.image('tileset_city', 'tilesets/city.png');
-        // this.load.image('tileset_interior', 'tilesets/interior.png');
+        // Tileset de sol (128x128 avec 16 tiles)
+        this.load.svg('tileset-floor', 'tileset-floor.svg', { width: 128, height: 128 });
 
         // ====================
         // UI
         // ====================
 
-        // this.load.image('ui_panel', 'ui/panel.png');
-        // this.load.image('ui_button_cyan', 'ui/button_cyan.png');
-        // this.load.image('ui_button_orange', 'ui/button_orange.png');
-        // this.load.image('icon_pizza', 'ui/icons/pizza.png');
-        // this.load.image('icon_agent', 'ui/icons/agent.png');
+        // Logo du jeu (400x200)
+        this.load.svg('logo', 'logo.svg', { width: 400, height: 200 });
+
+        // Icônes UI (256x256 avec 16 icônes)
+        this.load.svg('ui-icons', 'ui-icons.svg', { width: 256, height: 256 });
 
         // ====================
-        // AUDIO
+        // ITEMS
         // ====================
 
-        // this.load.audio('bgm_main', 'audio/music/main_theme.mp3');
-        // this.load.audio('sfx_click', 'audio/sfx/click.mp3');
-        // this.load.audio('sfx_hover', 'audio/sfx/hover.mp3');
+        // Item pizza (32x32)
+        this.load.svg('pizza-item', 'pizza-item.svg', { width: 32, height: 32 });
 
-        // ====================
-        // MAPS (Tiled)
-        // ====================
-
-        // this.load.tilemapTiledJSON('map_spawn', 'maps/spawn.json');
-        // this.load.tilemapTiledJSON('map_city', 'maps/city.json');
-
-        console.log('📦 PreloadScene: Chargement des assets...');
+        console.log('📦 PreloadScene: Chargement des assets SVG...');
     }
 
     create(): void {
         console.log('✅ PreloadScene: Assets chargés !');
 
-        // Création des animations globales
+        // Création des textures dérivées des SVG
+        this.createDerivedTextures();
+
+        // Création des animations
         this.createAnimations();
 
         // Transition vers le menu principal après un court délai
@@ -199,21 +185,49 @@ export class PreloadScene extends Phaser.Scene {
         });
     }
 
-    private createAnimations(): void {
-        // Animations du joueur
-        // this.anims.create({
-        //   key: 'player_idle',
-        //   frames: this.anims.generateFrameNumbers('player_idle', { start: 0, end: 3 }),
-        //   frameRate: 8,
-        //   repeat: -1,
-        // });
+    private createDerivedTextures(): void {
+        // Créer des textures pour les tiles individuels à partir du tileset
+        const tilesetTexture = this.textures.get('tileset-floor');
+        if (tilesetTexture) {
+            // Le tileset est 128x128 avec 16 tiles de 32x32
+            const tileSize = 32;
+            const tilesPerRow = 4;
 
-        // this.anims.create({
-        //   key: 'player_walk_down',
-        //   frames: this.anims.generateFrameNumbers('player_walk', { start: 0, end: 3 }),
-        //   frameRate: 12,
-        //   repeat: -1,
-        // });
+            for (let i = 0; i < 16; i++) {
+                const x = (i % tilesPerRow) * tileSize;
+                const y = Math.floor(i / tilesPerRow) * tileSize;
+
+                // Créer une frame pour chaque tile
+                tilesetTexture.add(`tile-${i}`, 0, x, y, tileSize, tileSize);
+            }
+
+            console.log('🎨 Textures de tiles créées');
+        }
+
+        // Créer des textures pour les icônes UI à partir de ui-icons.svg
+        const uiTexture = this.textures.get('ui-icons');
+        if (uiTexture) {
+            // Le sprite UI est 256x256 avec 16 icônes de 64x64
+            const iconSize = 64;
+            const iconsPerRow = 4;
+
+            for (let i = 0; i < 16; i++) {
+                const x = (i % iconsPerRow) * iconSize;
+                const y = Math.floor(i / iconsPerRow) * iconSize;
+
+                uiTexture.add(`ui-icon-${i}`, 0, x, y, iconSize, iconSize);
+            }
+
+            console.log('🎨 Textures d\'icônes UI créées');
+        }
+    }
+
+    private createAnimations(): void {
+        // Animation de pulsation pour le joueur (idle)
+        this.tweens.add({
+            targets: {},
+            duration: 1000,
+        });
 
         console.log('🎬 Animations créées');
     }
