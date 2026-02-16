@@ -68,40 +68,63 @@ export class GameScene extends Phaser.Scene {
     }
 
     preload(): void {
-        // Charger les assets PNG générés par NanoBanana Pro
-        // Sprites personnages
-        this.load.spritesheet('player-knight', 'assets/characters/player-knight.png', {
-            frameWidth: 64,
-            frameHeight: 64
-        });
-        this.load.spritesheet('player-mage', 'assets/characters/player-mage.png', {
-            frameWidth: 64,
-            frameHeight: 64
-        });
-        this.load.spritesheet('player-rogue', 'assets/characters/player-rogue.png', {
-            frameWidth: 64,
-            frameHeight: 64
-        });
-        this.load.spritesheet('player-engineer', 'assets/characters/player-engineer.png', {
-            frameWidth: 64,
-            frameHeight: 64
-        });
+        // Les assets sont déjà chargés dans PreloadScene
+        // On ne recharge que si nécessaire (fallback)
+
+        // Sprites personnages - vérifier si déjà chargés
+        if (!this.textures.exists('player-knight')) {
+            this.load.spritesheet('player-knight', '/assets/characters/player-knight.png', {
+                frameWidth: 64,
+                frameHeight: 64
+            });
+        }
+        if (!this.textures.exists('player-mage')) {
+            this.load.spritesheet('player-mage', '/assets/characters/player-mage.png', {
+                frameWidth: 64,
+                frameHeight: 64
+            });
+        }
+        if (!this.textures.exists('player-rogue')) {
+            this.load.spritesheet('player-rogue', '/assets/characters/player-rogue.png', {
+                frameWidth: 64,
+                frameHeight: 64
+            });
+        }
+        if (!this.textures.exists('player-engineer')) {
+            this.load.spritesheet('player-engineer', '/assets/characters/player-engineer.png', {
+                frameWidth: 64,
+                frameHeight: 64
+            });
+        }
 
         // Tilesets
-        this.load.image('tileset-urban-ground', 'assets/tilesets/tileset-urban-ground.png');
-        this.load.image('tileset-urban-walls', 'assets/tilesets/tileset-urban-walls.png');
+        if (!this.textures.exists('tileset-urban-ground')) {
+            this.load.image('tileset-urban-ground', '/assets/tilesets/tileset-urban-ground.png');
+        }
+        if (!this.textures.exists('tileset-urban-walls')) {
+            this.load.image('tileset-urban-walls', '/assets/tilesets/tileset-urban-walls.png');
+        }
 
-        // UI
-        this.load.image('ui-bars', 'assets/ui/ui-bars.png');
-        this.load.image('ui-buttons', 'assets/ui/ui-buttons.png');
-        this.load.image('ui-minimap', 'assets/ui/ui-minimap.png');
+        // UI - seulement ce qui existe
+        if (!this.textures.exists('ui-buttons')) {
+            this.load.image('ui-buttons', '/assets/ui/ui-buttons.png');
+        }
+        if (!this.textures.exists('ui-minimap')) {
+            this.load.image('ui-minimap', '/assets/ui/ui-minimap.png');
+        }
 
         // Logo
-        this.load.image('logo-game', 'assets/logo/logo-game.png');
+        if (!this.textures.exists('logo-game')) {
+            this.load.image('logo-game', '/assets/logo/logo-game.png');
+        }
 
-        // Assets legacy SVG
-        this.load.svg('player', 'assets/player.svg', { width: 64, height: 96 });
-        this.load.svg('logo', 'assets/logo.svg', { width: 200, height: 100 });
+        // Assets legacy SVG - fallback
+        if (!this.textures.exists('player')) {
+            this.load.svg('player', '/assets/player.svg', { width: 64, height: 96 });
+        }
+        if (!this.textures.exists('logo')) {
+            this.load.svg('logo', '/assets/logo.svg', { width: 200, height: 100 });
+        }
     }
 
     create(): void {
@@ -556,8 +579,28 @@ export class GameScene extends Phaser.Scene {
 
         this.mapContainer = this.add.container(0, 0);
 
-        // Sol avec grille
+        // Sol avec tileset ou grille de fallback
+        this.createGround();
+
+        // Bâtiments cyberpunk avec tileset ou rectangles
+        this.createBuildings();
+
+        // Néons et lumières
+        this.createNeonLights();
+
+        // Configuration de la caméra
+        this.cameras.main.setBounds(-1000, -1000, 2000, 2000);
+    }
+
+    private createGround(): void {
+        // Fallback: grille simple - le tileset est trop grand pour être utilisé comme tuiles
         const gridGraphics = this.add.graphics();
+
+        // Fond sombre
+        const bg = this.add.rectangle(0, 0, 2000, 2000, 0x0A0E1A);
+        this.mapContainer.add(bg);
+
+        // Grille cyberpunk
         gridGraphics.lineStyle(1, 0x1F2937, 0.5);
 
         for (let x = -1000; x <= 1000; x += 50) {
@@ -571,17 +614,33 @@ export class GameScene extends Phaser.Scene {
         gridGraphics.strokePath();
         this.mapContainer.add(gridGraphics);
 
-        // Bâtiments cyberpunk stylisés
-        this.createCyberpunkBuildings();
+        // Ajouter quelques dalles décoratives au sol
+        for (let i = 0; i < 20; i++) {
+            const x = (Math.random() - 0.5) * 1800;
+            const y = (Math.random() - 0.5) * 1800;
+            const size = 50 + Math.random() * 100;
 
-        // Néons et lumières
-        this.createNeonLights();
-
-        // Configuration de la caméra
-        this.cameras.main.setBounds(-1000, -1000, 2000, 2000);
+            const dalle = this.add.rectangle(x, y, size, size, 0x1F2937, 0.3);
+            dalle.setStrokeStyle(1, 0x00D4FF, 0.2);
+            this.mapContainer.add(dalle);
+        }
     }
 
-    private createCyberpunkBuildings(): void {
+    private createBuildings(): void {
+        // Vérifier si le tileset de murs existe
+        if (this.textures.exists('tileset-urban-walls')) {
+            this.createBuildingsWithTileset();
+        } else {
+            this.createCyberpunkBuildingsFallback();
+        }
+    }
+
+    private createBuildingsWithTileset(): void {
+        // Le tileset est trop grand, utiliser le fallback
+        this.createCyberpunkBuildingsFallback();
+    }
+
+    private createCyberpunkBuildingsFallback(): void {
         const buildingPositions = [
             { x: -400, y: -300, w: 120, h: 200, color: 0x111827 },
             { x: 300, y: -400, w: 100, h: 250, color: 0x1F2937 },
@@ -592,12 +651,12 @@ export class GameScene extends Phaser.Scene {
         ];
 
         buildingPositions.forEach((pos, index) => {
-            const building = this.createStyledBuilding(pos.x, pos.y, pos.w, pos.h, pos.color, index);
+            const building = this.createStyledBuildingFallback(pos.x, pos.y, pos.w, pos.h, pos.color, index);
             this.mapContainer.add(building);
         });
     }
 
-    private createStyledBuilding(x: number, y: number, w: number, h: number, color: number, index: number): Phaser.GameObjects.Container {
+    private createStyledBuildingFallback(x: number, y: number, w: number, h: number, color: number, index: number): Phaser.GameObjects.Container {
         const container = this.add.container(x, y);
 
         // Corps du bâtiment
@@ -622,13 +681,13 @@ export class GameScene extends Phaser.Scene {
                     const winColor = isLit ? (Math.random() > 0.5 ? 0x00D4FF : 0xFF6B35) : 0x374151;
                     const winAlpha = isLit ? 0.9 : 0.3;
 
-                    const window = this.add.rectangle(winX, winY, 12, 16, winColor, winAlpha);
-                    container.add(window);
+                    const windowRect = this.add.rectangle(winX, winY, 12, 16, winColor, winAlpha);
+                    container.add(windowRect);
 
                     // Animation clignotante pour certaines fenêtres
                     if (isLit && Math.random() > 0.8) {
                         this.tweens.add({
-                            targets: window,
+                            targets: windowRect,
                             alpha: { from: winAlpha, to: winAlpha * 0.3 },
                             duration: 1000 + Math.random() * 2000,
                             yoyo: true,
@@ -701,22 +760,36 @@ export class GameScene extends Phaser.Scene {
 
         // Sprite du joueur avec spritesheet NanoBanana
         const spriteKey = `player-${this.playerClass}`;
+        console.log(`🔍 Vérification du sprite: ${spriteKey}, existe: ${this.textures.exists(spriteKey)}`);
+
         if (this.textures.exists(spriteKey)) {
-            this.playerSprite = this.add.sprite(0, 0, spriteKey, 0);
-            this.playerSprite.setScale(1);
+            // Créer le sprite avec la première frame
+            this.playerSprite = this.add.sprite(0, 0, spriteKey);
+            this.playerSprite.setScale(1.5); // Légèrement plus grand pour meilleure visibilité
             this.player.add(this.playerSprite);
 
-            // Démarrer l'animation idle
-            this.playAnimation('idle', 'down');
+            console.log(`✅ Sprite créé pour ${spriteKey}`);
+
+            // Démarrer l'animation idle si elle existe
+            const animKey = `${this.playerClass}-idle-down`;
+            if (this.anims.exists(animKey)) {
+                this.playerSprite.play(animKey, true);
+                console.log(`🎬 Animation démarrée: ${animKey}`);
+            } else {
+                console.warn(`⚠️ Animation non trouvée: ${animKey}`);
+                // Afficher la frame 0 par défaut
+                this.playerSprite.setFrame(0);
+            }
         } else {
             // Fallback sur l'ancien sprite SVG
+            console.warn(`⚠️ Spritesheet non trouvé: ${spriteKey}, utilisation du fallback`);
             const fallbackSprite = this.add.image(0, 0, 'player');
             fallbackSprite.setScale(0.8);
             this.player.add(fallbackSprite);
         }
 
         // Nom du joueur
-        const nameText = this.add.text(0, -45, this.playerUsername, {
+        const nameText = this.add.text(0, -55, this.playerUsername, {
             fontFamily: '"Segoe UI", sans-serif',
             fontSize: '14px',
             color: '#FFFFFF',
@@ -734,7 +807,7 @@ export class GameScene extends Phaser.Scene {
             rogue: '#00FF00',  // Vert
             engineer: '#FF6B35' // Orange
         };
-        const levelBadge = this.add.text(25, -35, '1', {
+        const levelBadge = this.add.text(30, -45, '1', {
             fontFamily: '"Segoe UI", sans-serif',
             fontSize: '11px',
             color: '#0A0E1A',

@@ -200,7 +200,9 @@ export class AuthScene extends Phaser.Scene {
 
         // Supprimer l'ancien titre s'il existe
         const existingTitle = this.children.list.find(
-            child => child instanceof Phaser.GameObjects.Text && (child as Phaser.GameObjects.Text).text.includes('CONNEXION') || (child as Phaser.GameObjects.Text).text.includes('INSCRIPTION')
+            child => child instanceof Phaser.GameObjects.Text &&
+                     ((child as Phaser.GameObjects.Text).text === 'CONNEXION' ||
+                      (child as Phaser.GameObjects.Text).text === 'INSCRIPTION')
         );
         if (existingTitle) {
             existingTitle.destroy();

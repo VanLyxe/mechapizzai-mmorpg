@@ -20,8 +20,8 @@ export class PreloadScene extends Phaser.Scene {
         this.createLoadingUI();
         this.setupLoadingEvents();
 
-        // Configuration du chemin des assets
-        this.load.setPath('assets/');
+        // Configuration du chemin des assets - utiliser le chemin absolu depuis public
+        this.load.setPath('/assets/');
 
         // ====================
         // SPRITES PERSONNAGES (4 classes)
@@ -74,10 +74,7 @@ export class PreloadScene extends Phaser.Scene {
         // UI ET HUD (5)
         // ====================
 
-        // Barres de PV/MP
-        this.load.image('ui-bars', 'ui/ui-bars.png');
-
-        // Boutons Menu
+        // Boutons Menu - SEUL UI EXISTANT
         this.load.image('ui-buttons', 'ui/ui-buttons.png');
 
         // Inventaire Grille
@@ -85,9 +82,6 @@ export class PreloadScene extends Phaser.Scene {
 
         // Minimap Radar
         this.load.image('ui-minimap', 'ui/ui-minimap.png');
-
-        // Police Bitmap
-        this.load.image('ui-font', 'ui/ui-font.png');
 
         // ====================
         // EFFETS ET PARTICULES (5)
@@ -124,7 +118,7 @@ export class PreloadScene extends Phaser.Scene {
         });
 
         // ====================
-        // ITEMS ET OBJETS (5)
+        // ITEMS ET OBJETS (3 existants)
         // ====================
 
         // Armes - Épées et Bâtons
@@ -133,17 +127,11 @@ export class PreloadScene extends Phaser.Scene {
         // Armures et Équipement
         this.load.image('items-armor', 'items/items-armor.png');
 
-        // Potions et Consommables
-        this.load.image('items-consumables', 'items/items-consumables.png');
-
-        // Clés et Objets de Quête
-        this.load.image('items-quest', 'items/items-quest.png');
-
         // Pizza Magique (Buffs)
         this.load.image('items-pizza-buffs', 'items/items-pizza-buffs.png');
 
         // ====================
-        // LOGO ET TITRE (3)
+        // LOGO ET TITRE (2 existants)
         // ====================
 
         // Logo MechaPizzAI
@@ -151,9 +139,6 @@ export class PreloadScene extends Phaser.Scene {
 
         // Écran Titre
         this.load.image('title-screen', 'logo/title-screen.png');
-
-        // Icônes de Classe
-        this.load.image('class-icons', 'logo/class-icons.png');
 
         // ====================
         // ASSETS LEGACY (SVG)
@@ -314,31 +299,54 @@ export class PreloadScene extends Phaser.Scene {
         const animations = ['idle', 'walk', 'attack', 'skill'];
 
         // Pour chaque classe de personnage
-        characterClasses.forEach((charClass, classIndex) => {
+        characterClasses.forEach((charClass) => {
             const spriteKey = `player-${charClass}`;
 
             // Vérifier si le spritesheet existe
-            if (!this.textures.exists(spriteKey)) return;
+            if (!this.textures.exists(spriteKey)) {
+                console.warn(`⚠️ Spritesheet non trouvé: ${spriteKey}`);
+                return;
+            }
 
-            // Calculer l'offset de base pour cette classe (chaque classe a 256 frames)
-            // Format: 8 directions × 8 frames × 4 animations = 256 frames par classe
-            const baseFrameOffset = classIndex * 256;
+            // Récupérer les dimensions de la texture
+            const texture = this.textures.get(spriteKey);
+            const source = texture.getSourceImage();
+            const sheetWidth = source.width;
+            const sheetHeight = source.height;
+
+            console.log(`📊 Spritesheet ${spriteKey}: ${sheetWidth}x${sheetHeight}`);
+
+            // Calculer le nombre de frames
+            const framesPerRow = Math.floor(sheetWidth / 64);
+            const totalFrames = Math.floor((sheetWidth * sheetHeight) / (64 * 64));
+
+            console.log(`🎞️ Frames par ligne: ${framesPerRow}, Total frames: ${totalFrames}`);
+
+            // Créer des animations simples basées sur les frames disponibles
+            // Format simplifié: 4 directions × 8 frames = 32 frames par animation type
 
             directions.forEach((direction, dirIndex) => {
                 animations.forEach((anim, animIndex) => {
                     const animKey = `${charClass}-${anim}-${direction}`;
-                    const startFrame = baseFrameOffset + (animIndex * 64) + (dirIndex * 8);
-                    const endFrame = startFrame + 7;
 
-                    this.anims.create({
-                        key: animKey,
-                        frames: this.anims.generateFrameNumbers(spriteKey, {
-                            start: startFrame,
-                            end: endFrame
-                        }),
-                        frameRate: anim === 'walk' ? 12 : 8,
-                        repeat: anim === 'idle' || anim === 'walk' ? -1 : 0
-                    });
+                    // Calculer les frames pour cette animation
+                    // Chaque animation utilise 8 frames consécutives
+                    const startFrame = (animIndex * 32) + (dirIndex * 8);
+                    const endFrame = Math.min(startFrame + 7, totalFrames - 1);
+
+                    // Ne créer l'animation que si les frames existent
+                    if (startFrame < totalFrames) {
+                        this.anims.create({
+                            key: animKey,
+                            frames: this.anims.generateFrameNumbers(spriteKey, {
+                                start: startFrame,
+                                end: endFrame
+                            }),
+                            frameRate: anim === 'walk' ? 12 : 8,
+                            repeat: anim === 'idle' || anim === 'walk' ? -1 : 0
+                        });
+                        console.log(`✅ Animation créée: ${animKey} (frames ${startFrame}-${endFrame})`);
+                    }
                 });
             });
         });
